@@ -1,0 +1,31 @@
+{
+	"dependencies": {
+		"@discordjs/builders": "^0.6.0",
+		"@discordjs/opus": "^0.5.3",
+		"@discordjs/rest": "^0.1.0-canary.0",
+		"@discordjs/voice": "^0.6.0",
+		"auto-bind": "^4.0.0",
+		"discord-api-types": "^0.23.1",
+		"discord.js": "^13.1.0",
+		"install": "^0.13.0",
+		"npm": "^7.24.1",
+		"sodium": "^3.0.2",
+		"sprintf-js": "^1.1.2",
+		"youtube-dl-exec": "^1.2.14"
+	},
+	"name": "discord-bot",
+	"version": "1.0.0",
+	"main": "index.js",
+	"devDependencies": {
+		"eslint": "^7.32.0",
+		"prettier": "^2.4.1"
+	},
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"description": "",
+	"type": "module"
+}
