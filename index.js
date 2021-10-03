@@ -38,64 +38,29 @@ const musicChannelId = '558738202811432969';
  * @param {boolean} authorIsBot Whether the author of the command which summoned the bot is another bot.
  * @param {string} channelId The id of the text channel where the bot was summoned.
  * @param {string | null} voiceChannelId The id of the voice channel where the bot was summoned to.
- * @returns {"botAuthor"|"wrongChannel"|"notInVC"|null} Either __a string__ containing an error message to send or __null__ if all checks are met.
+ * @param {AudioPlayerWrapper|null} player The audio player that will be used to play music.
+ * @returns {"botAuthor"|"wrongChannel"|"notInVC"|"noPlayer"|null} Either __a string__ containing an error message to send or __null__ if all checks are met.
  */
-function doMusicCmdChecks(authorIsBot, channelId, voiceChannelId) {
+function doMusicCmdChecks(authorIsBot, channelId, voiceChannelId, player) {
 	if (authorIsBot) return 'botAuthor';
 	if (channelId !== musicChannelId) return 'wrongChannel';
 	if (voiceChannelId === null) return 'notInVC';
+	if (player == null) return 'noPlayer';
 
 	return null;
 }
 
 /**
- * Attempts to join a voice channel.
- * The voice channel is the same as the one of the user who asked for the bot.
- * @param {Message} msg The message sent to make the bot join VC.
- * @param {boolean} willPlayMusic Will the bot be playing music?
- * @returns {Promise<{channelId: string, voiceConnection: VoiceConnection} | null>} A __VoiceConnection__ if the connection was successful, __null__ otherwise.
+ * @global
+ * @readonly
+ * @type {Map<"botAuthor"|"wrongChannel"|"notInVC"|"noPlayer", string>}
  */
-async function tryJoinVC(msg, willPlayMusic) {
-	const member = await msg.guild.members.fetch({ user: msg.author });
-
-	const err = doMusicCmdChecks(
-		msg.author.bot,
-		msg.channelId,
-		member.voice.channelId,
-	);
-
-	if (err !== null) {
-		let is_err = true;
-
-		switch (err) {
-			case 'botAuthor':
-				await msg.channel.send('Аве ей, лайно, я не ми се прави.');
-				break;
-			case 'notInVC':
-				await msg.channel.send('Влез в гласов канал бе...');
-				break;
-			case 'wrongChannel':
-				if (willPlayMusic) {
-					await msg.channel.send(
-						`Не тука, шефе. <#${musicChannelId}>`,
-					);
-				} else {
-					is_err = false;
-				}
-				break;
-		}
-		if (is_err) return null;
-	}
-
-	return {
-		channelId: member.voice.channelId,
-		voiceConnection: joinVoiceChannel({
-			guildId: msg.guildId,
-			channelId: member.voice.channelId,
-			adapterCreator: msg.guild.voiceAdapterCreator,
-		}),
-	};
-}
+const MusicCmdErrorsMap = {
+	botAuthor: 'Ей, лайно, не си пробвай късмета.',
+	wrongChannel: `Не тука, шефе. <#${musicChannelId}>`,
+	notInVC: 'Влез в гласов канал бе...',
+	noPlayer: 'Първо трябва да ме поканиш в гласов канал.',
+};
 
 /**
  * @global
@@ -123,15 +88,63 @@ function getPlayer(vconn, musicTextChannel) {
 
 	const playerWrapper = new AudioPlayerWrapper(player, musicTextChannel);
 
+	console.log(`>> Created player for ${id}.`);
+
 	PLAYERS[id] = playerWrapper;
 	return playerWrapper;
 }
+
+/**
+ * Attempts to join a voice channel.
+ * The voice channel is the same as the one of the user who asked for the bot.
+ * @param {Message} msg The message sent to make the bot join VC.
+ * @param {boolean} willPlayMusic Will the bot be playing music?
+ * @returns {Promise<{channelId: string, voiceConnection: VoiceConnection, player: AudioPlayerWrapper} | null>} A __VoiceConnection__ if the connection was successful, __null__ otherwise.
+ */
+async function tryJoinVC(msg, willPlayMusic) {
+	const member = await msg.guild.members.fetch({ user: msg.author });
+
+	const err = doMusicCmdChecks(
+		msg.author.bot,
+		msg.channelId,
+		member.voice.channelId,
+		null,
+	);
+
+	if (err !== null && err !== 'noPlayer') {
+		if (err !== 'wrongChannel' || !willPlayMusic) {
+			await msg.channel.send(MusicCmdErrorsMap[err]);
+			return null;
+		}
+	}
+
+	const res = {
+		channelId: member.voice.channelId,
+		voiceConnection: joinVoiceChannel({
+			guildId: msg.guildId,
+			channelId: member.voice.channelId,
+			adapterCreator: msg.guild.voiceAdapterCreator,
+		}),
+		player: null,
+	};
+	res.player = getPlayer(res.voiceConnection, msg.channel);
+	return res;
+}
+
 // TODO: >udri команда - чалга рулетка
 
 client.on('messageCreate', async (msg) => {
 	if (msg.author.id == client.user.id) return;
 
 	const player = getPlayer(getVoiceConnection(msg.guildId), msg.channel);
+
+	const member = await msg.guild.members.fetch({ user: msg.author });
+	const err = doMusicCmdChecks(
+		msg.author.bot,
+		msg.channelId,
+		member.voice.id,
+		player,
+	);
 
 	switch (msg.content) {
 		case 'boqn e gej':
@@ -176,42 +189,80 @@ client.on('messageCreate', async (msg) => {
 		case '>pause':
 		case '>spri malko':
 		case '>spri':
-			player.pause();
-			msg.channel.send('Хубу, шефе.');
+			if (err == null) {
+				if (player.currentSong == null) {
+					msg.channel.send('Няма какво да паузирам.');
+				} else {
+					player.pause();
+					msg.channel.send('Хубу, шефе.');
+				}
+			} else {
+				msg.channel.send(MusicCmdErrorsMap[err]);
+			}
 			break;
 
 		case '>s':
 		case '>skip':
-			player.skip();
+			if (err == null) {
+				player.skip();
+			} else {
+				msg.channel.send(MusicCmdErrorsMap[err]);
+			}
 			break;
 
 		case '>daj mu':
-			msg.channel.send('ДАЙ МУ');
+			if (err == null) {
+				msg.channel.send('ДАЙ МУ');
+			}
 		case '>daj pak':
 		case '>resume':
 		case '>unpause':
-			player.unpause();
+			if (err == null) {
+				player.unpause();
+			} else {
+				msg.channel.send(MusicCmdErrorsMap[err]);
+			}
 			break;
 
 		case '>leave':
 		case '>mahaj_se':
 		case '>mahaj se':
-			player.clearQueue();
-			getVoiceConnection(msg.guildId).destroy();
+			if (err == null) {
+				player.clearQueue();
+				getVoiceConnection(msg.guildId).destroy();
+			} else {
+				msg.channel.send(MusicCmdErrorsMap[err]);
+			}
+			break;
+
+		case '>clear':
+			if (err == null) {
+				player.clearQueue();
+			} else {
+				msg.channel.send(MusicCmdErrorsMap[err]);
+			}
 			break;
 
 		case '>kvo sledva':
 		case '>kvo sledva?':
 		case '>q':
 		case '>queue':
-			player.printQueue();
+			if (err == null) {
+				player.printQueue();
+			} else {
+				msg.channel.send(MusicCmdErrorsMap[err]);
+			}
 			break;
 
 		case '>kvo slushame?':
 		case '>nowplaying':
 		case '>now playing':
 		case '>np':
-			player.printCurrentSong();
+			if (err == null) {
+				player.printCurrentSong();
+			} else {
+				msg.channel.send(MusicCmdErrorsMap[err]);
+			}
 			break;
 	}
 
@@ -221,9 +272,9 @@ client.on('messageCreate', async (msg) => {
 		msg.content.startsWith('>p ') ||
 		msg.content.startsWith('>play ')
 	) {
-		const vc = await tryJoinVC(msg, true);
+		const newPlayer = (await tryJoinVC(msg, true)).player;
 		const args = msg.content.substr(msg.content.indexOf(' ') + 1).trim();
-		getPlayer(vc.voiceConnection, msg.channel).play(args);
+		newPlayer.play(args);
 	}
 
 	console.log(`Got a message from ${msg.author}: "${msg.content}"`);

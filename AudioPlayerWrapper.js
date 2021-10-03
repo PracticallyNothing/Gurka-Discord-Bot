@@ -33,6 +33,16 @@ class AudioPlayerWrapper {
 		autobind(this);
 
 		this.player.on(AudioPlayerStatus.Idle, this.playNextSong);
+		this.player.on(AudioPlayerStatus.Paused, () => {
+			if (this.currentSong != null) {
+				this.currentSong.onPause();
+			}
+		});
+		this.player.on(AudioPlayerStatus.Playing, () => {
+			if (this.currentSong != null) {
+				this.currentSong.onResume();
+			}
+		});
 	}
 
 	/**
@@ -115,7 +125,9 @@ class AudioPlayerWrapper {
 			this.musicChannel.send('Нищо.');
 		} else {
 			this.musicChannel.send(
-				`Слушаме **${this.currentSong.title}** (${this.currentSong.duration})`,
+				`Слушаме **${
+					this.currentSong.title
+				}** (${this.currentSong.calcTimeElapsedString()}/${this.currentSong.durationString()}).`,
 			);
 		}
 	}
@@ -125,17 +137,23 @@ class AudioPlayerWrapper {
 			this.musicChannel.send('Нема какво да свириме.');
 		} else if (this.queue.length == 0 && this.currentSong != null) {
 			this.musicChannel.send(
-				`Сега слушаме **${this.currentSong.title}** (${this.currentSong.duration}), обаче след туй: нищо.`,
+				`Сега слушаме **${
+					this.currentSong.title
+				}** (${this.currentSong.durationString()}), обаче след туй: нищо.`,
 			);
 		} else {
 			const str = [];
 
 			this.queue.forEach((song, i) => {
-				str.push(`${i + 1}. **${song.title}** (${song.duration})`);
+				str.push(
+					`${i + 1}. **${song.title}** (${song.durationString()})`,
+				);
 			});
 
 			this.musicChannel.send(
-				`Сега слушаме **${this.currentSong.title}** (${this.currentSong.duration}).\n` +
+				`Сега слушаме **${
+					this.currentSong.title
+				}** (${this.currentSong.durationString()}).\n` +
 					`След туй иде:\n  ${str.join('  \n')}`,
 			);
 		}
@@ -166,18 +184,20 @@ class AudioPlayerWrapper {
 		const resource = createAudioResource(stream, { inputType: type });
 
 		this.musicChannel.send(
-			`⏵ Пускаме **${song.title}** (${song.duration})!`,
+			`⏵ Пускаме **${song.title}** (${song.durationString()})!`,
 		);
 		this.player.play(resource);
 	}
 
 	skip() {
 		this.player.stop();
+		this.currentSong = null;
 	}
 
 	clearQueue() {
 		this.queue = [];
-		// this.player.stop();
+		this.currentSong = null;
+		this.player.stop();
 	}
 
 	pause() {
