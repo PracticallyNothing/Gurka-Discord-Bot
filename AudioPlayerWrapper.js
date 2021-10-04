@@ -183,6 +183,19 @@ class AudioPlayerWrapper {
 		const { stream, type } = await demuxProbe(child.stdout);
 		const resource = createAudioResource(stream, { inputType: type });
 
+		const titleContains = (str) =>
+			this.currentSong.title
+				.toLocaleLowerCase()
+				.indexOf(str.toLocaleLowerCase()) >= 0;
+
+		if (titleContains('bladee')) {
+			await this.musicChannel.send('il be blejd');
+		} else if (titleContains('KD/A') || titleContains('Pentakill')) {
+			await this.musicChannel.send('il be liga');
+		} else if (titleContains('Drake')) {
+			await this.musicChannel.send('il be drejk');
+		}
+
 		this.musicChannel.send(
 			`⏵ Пускаме **${song.title}** (${song.durationString()})!`,
 		);
