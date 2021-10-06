@@ -1,15 +1,16 @@
 /* eslint-disable no-fallthrough */
-import { Client, Intents } from 'discord.js';
+import { Client, Intents, Message } from 'discord.js';
 import {
 	joinVoiceChannel,
 	getVoiceConnection,
 	createAudioPlayer,
 	NoSubscriberBehavior,
+	VoiceConnection,
 } from '@discordjs/voice';
 import { readFileSync } from 'fs';
 import { AudioPlayerWrapper } from './AudioPlayerWrapper.js';
 
-const config = JSON.parse(readFileSync('./config.json'));
+const config = JSON.parse(readFileSync('./config.json').toString('utf-8'));
 const client = new Client({
 	intents: [
 		Intents.FLAGS.DIRECT_MESSAGES,
@@ -33,48 +34,55 @@ client.once('ready', () => {
  * @readonly */
 const musicChannelId = '558738202811432969';
 
+enum MusicCmdError {
+	OK,
+	BotAuthor,
+	WrongChannel,
+	NotInVC,
+	NoPlayer,
+}
+
 /**
  * Checks if all conditions are met to execute a voice channel command.
- * @param {boolean} authorIsBot Whether the author of the command which summoned the bot is another bot.
- * @param {string} channelId The id of the text channel where the bot was summoned.
- * @param {string | null} voiceChannelId The id of the voice channel where the bot was summoned to.
- * @param {AudioPlayerWrapper|null} player The audio player that will be used to play music.
- * @returns {"botAuthor"|"wrongChannel"|"notInVC"|"noPlayer"|null} Either __a string__ containing an error message to send or __null__ if all checks are met.
+ * @param authorIsBot Whether the author of the command which summoned the bot is another bot.
+ * @param channelId The id of the text channel where the bot was summoned.
+ * @param voiceChannelId The id of the voice channel where the bot was summoned to.
+ * @param player The audio player that will be used to play music.
+ * @returns MusicCmdError.OK if everything is ok, an error otherwise.
  */
-function doMusicCmdChecks(authorIsBot, channelId, voiceChannelId, player) {
-	if (authorIsBot) return 'botAuthor';
-	if (channelId !== musicChannelId) return 'wrongChannel';
-	if (voiceChannelId === null) return 'notInVC';
-	if (player == null) return 'noPlayer';
+function doMusicCmdChecks(
+	authorIsBot: boolean,
+	channelId: string,
+	voiceChannelId: string | null,
+	player: AudioPlayerWrapper | null,
+): MusicCmdError {
+	if (authorIsBot) return MusicCmdError.BotAuthor;
+	if (channelId !== musicChannelId) return MusicCmdError.WrongChannel;
+	if (voiceChannelId === null) return MusicCmdError.NotInVC;
+	if (player == null) return MusicCmdError.NoPlayer;
 
 	return null;
 }
 
-/**
- * @global
- * @readonly
- * @type {Map<"botAuthor"|"wrongChannel"|"notInVC"|"noPlayer", string>}
- */
-const MusicCmdErrorsMap = {
-	botAuthor: 'Ей, лайно, не си пробвай късмета.',
-	wrongChannel: `Не тука, шефе. <#${musicChannelId}>`,
-	notInVC: 'Влез в гласов канал бе...',
-	noPlayer: 'Първо трябва да ме поканиш в гласов канал.',
-};
+const MusicCmdErrorsMap = new Map([
+	[MusicCmdError.BotAuthor, 'Ей, лайно, не си пробвай късмета.'],
+	[MusicCmdError.WrongChannel, `Не тука, шефе. <#${musicChannelId}>`],
+	[MusicCmdError.NotInVC, 'Влез в гласов канал бе...'],
+	[MusicCmdError.NoPlayer, 'Първо трябва да ме поканиш в гласов канал.'],
+]);
 
-/**
- * @global
- * @type {Map<string, AudioPlayerWrapper>}
- */
-const PLAYERS = new Map();
+const PLAYERS: Map<string, AudioPlayerWrapper> = new Map();
 
 /**
  * Create a new discord.js AudioPlayer for a certain voice chat.
- * @param {VoiceConnection} vconn VoiceConnection to target channel.
- * @param {import("discord.js").TextBasedChannels} musicTextChannel Text channel which the bot reports to.
- * @returns {AudioPlayerWrapper|null} The audio player for the given VC or null if there's no way to get a player.
+ * @param vconn VoiceConnection to target channel.
+ * @param  musicTextChannel Text channel which the bot reports to.
+ * @returns The audio player for the given VC or null if there's no way to get a player.
  */
-function getPlayer(vconn, musicTextChannel) {
+function getPlayer(
+	vconn: VoiceConnection,
+	musicTextChannel: import('discord.js').TextBasedChannels,
+): AudioPlayerWrapper | null {
 	if (vconn == null) return null;
 
 	const id = vconn.joinConfig.channelId;
@@ -94,14 +102,23 @@ function getPlayer(vconn, musicTextChannel) {
 	return playerWrapper;
 }
 
+type JoinVCResult = {
+	channelId: string;
+	voiceConnection: VoiceConnection;
+	player: AudioPlayerWrapper;
+};
+
 /**
  * Attempts to join a voice channel.
  * The voice channel is the same as the one of the user who asked for the bot.
- * @param {Message} msg The message sent to make the bot join VC.
- * @param {boolean} willPlayMusic Will the bot be playing music?
- * @returns {Promise<{channelId: string, voiceConnection: VoiceConnection, player: AudioPlayerWrapper} | null>} A __VoiceConnection__ if the connection was successful, __null__ otherwise.
+ * @param msg The message sent to make the bot join VC.
+ * @param willPlayMusic Will the bot be playing music?
+ * @returns A __VoiceConnection__ if the connection was successful, __null__ otherwise.
  */
-async function tryJoinVC(msg, willPlayMusic) {
+async function tryJoinVC(
+	msg: Message,
+	willPlayMusic: boolean,
+): Promise<JoinVCResult | null> {
 	const member = await msg.guild.members.fetch({ user: msg.author });
 
 	const err = doMusicCmdChecks(
@@ -111,8 +128,8 @@ async function tryJoinVC(msg, willPlayMusic) {
 		null,
 	);
 
-	if (err !== null && err !== 'noPlayer') {
-		if (err !== 'wrongChannel' || !willPlayMusic) {
+	if (err !== null && err !== MusicCmdError.NoPlayer) {
+		if (err !== MusicCmdError.WrongChannel || !willPlayMusic) {
 			await msg.channel.send(MusicCmdErrorsMap[err]);
 			return null;
 		}

@@ -1,11 +1,12 @@
 import {
+	AudioPlayer,
 	AudioPlayerStatus,
 	createAudioResource,
 	demuxProbe,
 } from '@discordjs/voice';
 import { spawn, spawnSync } from 'child_process';
-import { Song } from './Song.js';
-import autobind from 'auto-bind';
+import { TextBasedChannels } from 'discord.js';
+import { Song } from './Song';
 
 /**
  * A wrapper around the discord.js AudioPlayer class.
@@ -13,24 +14,23 @@ import autobind from 'auto-bind';
  * @see AudioPlayer
  */
 class AudioPlayerWrapper {
+	private player: AudioPlayer;
+	private queue: Song[];
+	private musicChannel: TextBasedChannels;
+	public currentSong: Song;
+
 	/**
-	 * @param {AudioPlayer} player Player to use to play music.
-	 * @param {import("discord.js").TextBasedChannels} musicTextChannel Channel to use for music messages.
+	 * @param player Player to use to play music.
+	 * @param musicTextChannel Channel to use for music messages.
 	 */
-	constructor(player, musicTextChannel) {
-		/** @type {AudioPlayer} */
+	constructor(
+		player: AudioPlayer,
+		musicTextChannel: import('discord.js').TextBasedChannels,
+	) {
 		this.player = player;
-
-		/** @type {Song[]} */
 		this.queue = [];
-
-		/** @type {import("discord.js").TextBasedChannels} */
 		this.musicChannel = musicTextChannel;
-
-		/** @type {Song|null} */
 		this.currentSong = null;
-
-		autobind(this);
 
 		this.player.on(AudioPlayerStatus.Idle, this.playNextSong);
 		this.player.on(AudioPlayerStatus.Paused, () => {
@@ -46,14 +46,14 @@ class AudioPlayerWrapper {
 	}
 
 	/**
-	 * @param {string} str String to pass to the play command. Either contains a link or words to search youtube for.
+	 * @param str String to pass to the play command. Either contains a link or words to search youtube for.
 	 */
-	async play(str) {
+	public async play(str: string) {
 		str = str.trim();
 		const words = str.split(' ');
 
 		/** @type {Array<string>} */
-		const songUrls = [];
+		const songUrls: Array<string> = [];
 		let justWordsBuf = '';
 
 		words.forEach((word) => {
@@ -120,7 +120,7 @@ class AudioPlayerWrapper {
 		});
 	}
 
-	printCurrentSong() {
+	public printCurrentSong() {
 		if (this.currentSong == null) {
 			this.musicChannel.send('Нищо.');
 		} else {
@@ -132,7 +132,7 @@ class AudioPlayerWrapper {
 		}
 	}
 
-	printQueue() {
+	public printQueue() {
 		if (this.queue.length == 0 && this.currentSong == null) {
 			this.musicChannel.send('Нема какво да свириме.');
 		} else if (this.queue.length == 0 && this.currentSong != null) {
@@ -159,7 +159,7 @@ class AudioPlayerWrapper {
 		}
 	}
 
-	async playNextSong() {
+	private async playNextSong() {
 		const song = this.queue.shift();
 
 		if (song == undefined) {
@@ -202,24 +202,24 @@ class AudioPlayerWrapper {
 		this.player.play(resource);
 	}
 
-	skip() {
+	public skip() {
 		this.player.stop();
 		this.currentSong = null;
 	}
 
-	clearQueue() {
+	public clearQueue() {
 		this.queue = [];
 		this.currentSong = null;
 		this.player.stop();
 	}
 
-	pause() {
+	public pause() {
 		if (this.player.state.status == AudioPlayerStatus.Playing) {
 			this.player.pause();
 		}
 	}
 
-	unpause() {
+	public unpause() {
 		if (this.player.state.status == AudioPlayerStatus.Paused) {
 			this.player.unpause();
 		}
