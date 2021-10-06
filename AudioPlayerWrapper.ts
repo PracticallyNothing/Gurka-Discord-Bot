@@ -6,6 +6,7 @@ import {
 } from '@discordjs/voice';
 import { spawn, spawnSync } from 'child_process';
 import { TextBasedChannels } from 'discord.js';
+import { autobind } from 'ts-class-autobind';
 import { Song } from './Song';
 
 /**
@@ -43,6 +44,8 @@ class AudioPlayerWrapper {
 				this.currentSong.onResume();
 			}
 		});
+
+		autobind(this);
 	}
 
 	/**

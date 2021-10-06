@@ -10,7 +10,8 @@
 		"install": "^0.13.0",
 		"npm": "^7.24.1",
 		"sodium": "^3.0.2",
-		"sprintf-js": "^1.1.2"
+		"sprintf-js": "^1.1.2",
+		"ts-class-autobind": "^0.3.2"
 	},
 	"name": "discord-bot",
 	"version": "1.0.0",
