@@ -6,7 +6,7 @@ import {
 } from '@discordjs/voice';
 import { spawn, spawnSync } from 'child_process';
 import { TextBasedChannels } from 'discord.js';
-import { autobind } from 'ts-class-autobind';
+//import { autobind } from 'ts-class-autobind';
 import { Song } from './Song';
 
 /**
@@ -17,7 +17,7 @@ import { Song } from './Song';
 class AudioPlayerWrapper {
 	private player: AudioPlayer;
 	private queue: Song[];
-	private musicChannel: TextBasedChannels;
+	public musicChannel: TextBasedChannels;
 	public currentSong: Song;
 
 	/**
@@ -45,13 +45,13 @@ class AudioPlayerWrapper {
 			}
 		});
 
-		autobind(this);
+		//autobind(this);
 	}
 
 	/**
 	 * @param str String to pass to the play command. Either contains a link or words to search youtube for.
 	 */
-	public async play(str: string) {
+	public play = async (str: string) => {
 		str = str.trim();
 		const words = str.split(' ');
 
@@ -121,9 +121,9 @@ class AudioPlayerWrapper {
 				`+ Добавих ${numSongs} ${numSongs > 1 ? 'песни' : 'песен'}.`,
 			);
 		});
-	}
+	};
 
-	public printCurrentSong() {
+	public printCurrentSong = () => {
 		if (this.currentSong == null) {
 			this.musicChannel.send('Нищо.');
 		} else {
@@ -133,9 +133,9 @@ class AudioPlayerWrapper {
 				}** (${this.currentSong.calcTimeElapsedString()}/${this.currentSong.durationString()}).`,
 			);
 		}
-	}
+	};
 
-	public printQueue() {
+	public printQueue = () => {
 		if (this.queue.length == 0 && this.currentSong == null) {
 			this.musicChannel.send('Нема какво да свириме.');
 		} else if (this.queue.length == 0 && this.currentSong != null) {
@@ -160,9 +160,9 @@ class AudioPlayerWrapper {
 					`След туй иде:\n  ${str.join('  \n')}`,
 			);
 		}
-	}
+	};
 
-	private async playNextSong() {
+	private playNextSong = async () => {
 		const song = this.queue.shift();
 
 		if (song == undefined) {
@@ -203,30 +203,30 @@ class AudioPlayerWrapper {
 			`⏵ Пускаме **${song.title}** (${song.durationString()})!`,
 		);
 		this.player.play(resource);
-	}
+	};
 
-	public skip() {
+	public skip = () => {
 		this.player.stop();
 		this.currentSong = null;
-	}
+	};
 
-	public clearQueue() {
+	public clearQueue = () => {
 		this.queue = [];
 		this.currentSong = null;
 		this.player.stop();
-	}
+	};
 
-	public pause() {
+	public pause = () => {
 		if (this.player.state.status == AudioPlayerStatus.Playing) {
 			this.player.pause();
 		}
-	}
+	};
 
-	public unpause() {
+	public unpause = () => {
 		if (this.player.state.status == AudioPlayerStatus.Paused) {
 			this.player.unpause();
 		}
-	}
+	};
 }
 
 export { AudioPlayerWrapper };

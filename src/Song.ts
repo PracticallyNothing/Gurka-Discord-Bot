@@ -1,5 +1,5 @@
 import { sprintf } from 'sprintf-js';
-import { autobind } from 'ts-class-autobind';
+//import { autobind } from 'ts-class-autobind';
 /**
  * Convert a number of seconds into a comma-separated format (hh:mm:ss).
  * @param seconds Seconds to convert to time string.
@@ -59,31 +59,31 @@ class Song {
 
 		this.url = `https://www.youtube.com/watch?v=${youtubeId}`;
 
-		autobind(this);
+		//autobind(this);
 	}
 
-	public durationString() {
+	public durationString = () => {
 		return secondsToTimeString(this.duration);
-	}
+	};
 
-	public calcTimeElapsedString() {
+	public calcTimeElapsedString = () => {
 		return secondsToTimeString(
 			this.paused
 				? this.timeElapsed
 				: this.timeElapsed + (Date.now() / 1000 - this.timeStarted),
 			this.duration >= 3600,
 		);
-	}
+	};
 
-	public onPause() {
+	public onPause = () => {
 		this.timeElapsed += Date.now() / 1000 - this.timeStarted;
 		this.paused = true;
-	}
+	};
 
-	public onResume() {
+	public onResume = () => {
 		this.timeStarted = Date.now() / 1000;
 		this.paused = false;
-	}
+	};
 }
 
 export { Song };

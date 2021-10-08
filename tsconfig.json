@@ -2,9 +2,10 @@
 	"compilerOptions": {
 		"outDir": "./dist",
 		"allowJs": true,
-		"target": "ES5",
+		"target": "ES6",
 		"sourceMap": true,
-		"esModuleInterop": true
+		"esModuleInterop": true,
+		"moduleResolution": "node"
 	},
-	"include": ["./*"]
+	"include": ["./src/*"]
 }

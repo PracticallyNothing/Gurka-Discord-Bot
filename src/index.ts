@@ -1,4 +1,3 @@
-/* eslint-disable no-fallthrough */
 import { Client, Intents, Message } from 'discord.js';
 import {
 	joinVoiceChannel,
@@ -6,9 +5,10 @@ import {
 	createAudioPlayer,
 	NoSubscriberBehavior,
 	VoiceConnection,
+	DiscordGatewayAdapterCreator,
 } from '@discordjs/voice';
 import { readFileSync } from 'fs';
-import { AudioPlayerWrapper } from './AudioPlayerWrapper.js';
+import { AudioPlayerWrapper } from './AudioPlayerWrapper';
 
 const config = JSON.parse(readFileSync('./config.json').toString('utf-8'));
 const client = new Client({
@@ -140,7 +140,8 @@ async function tryJoinVC(
 		voiceConnection: joinVoiceChannel({
 			guildId: msg.guildId,
 			channelId: member.voice.channelId,
-			adapterCreator: msg.guild.voiceAdapterCreator,
+			adapterCreator: msg.guild
+				.voiceAdapterCreator as unknown as DiscordGatewayAdapterCreator,
 		}),
 		player: null,
 	};
