@@ -207,7 +207,12 @@ class AudioPlayerWrapper {
 
 	public skip = () => {
 		this.player.stop();
-		this.currentSong = null;
+
+		if (this.currentSong == null) {
+			this.queue.unshift();
+		} else {
+			this.currentSong = null;
+		}
 	};
 
 	public clearQueue = () => {
