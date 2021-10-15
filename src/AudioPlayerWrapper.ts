@@ -55,8 +55,15 @@ class AudioPlayerWrapper {
 		//autobind(this);
 	}
 
-	public setMode = (newMode: PlayerMode) => {
-		this.mode = newMode;
+	public changeMode = () => {
+		switch (this.mode) {
+			case PlayerMode.PlayOnce:
+				this.mode = PlayerMode.LoopQueue;
+				break;
+			case PlayerMode.LoopQueue:
+				this.mode = PlayerMode.PlayOnce;
+				break;
+		}
 	};
 
 	/**

@@ -5,7 +5,7 @@ import {
 	createAudioPlayer,
 	NoSubscriberBehavior,
 	VoiceConnection,
-	DiscordGatewayAdapterCreator
+	DiscordGatewayAdapterCreator,
 } from '@discordjs/voice';
 import { readFileSync } from 'fs';
 import { AudioPlayerWrapper } from './AudioPlayerWrapper';
@@ -256,6 +256,15 @@ client.on('messageCreate', async (msg) => {
 		case '>clear':
 			if (err == null) {
 				player.clearQueue();
+			} else {
+				msg.channel.send(MusicCmdErrorsMap[err]);
+			}
+			break;
+
+		case '>povtarqi':
+		case '>loop':
+			if (err == null) {
+				player.changeMode();
 			} else {
 				msg.channel.send(MusicCmdErrorsMap[err]);
 			}
