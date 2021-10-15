@@ -8,6 +8,13 @@ import { spawn, spawnSync } from 'child_process';
 import { TextBasedChannels } from 'discord.js';
 //import { autobind } from 'ts-class-autobind';
 import { Song } from './Song';
+import { sendMessage } from './Util';
+
+enum PlayerMode {
+	PlayOnce,
+	//LoopOneSong,
+	LoopQueue,
+}
 
 /**
  * A wrapper around the discord.js AudioPlayer class.
@@ -16,9 +23,11 @@ import { Song } from './Song';
  */
 class AudioPlayerWrapper {
 	private player: AudioPlayer;
-	private queue: Song[];
+	private queue: Song[] = [];
 	public musicChannel: TextBasedChannels;
-	public currentSong: Song;
+	public currentSong: Song = null;
+
+	private mode: PlayerMode = PlayerMode.PlayOnce;
 
 	/**
 	 * @param player Player to use to play music.
@@ -29,9 +38,7 @@ class AudioPlayerWrapper {
 		musicTextChannel: import('discord.js').TextBasedChannels,
 	) {
 		this.player = player;
-		this.queue = [];
 		this.musicChannel = musicTextChannel;
-		this.currentSong = null;
 
 		this.player.on(AudioPlayerStatus.Idle, this.playNextSong);
 		this.player.on(AudioPlayerStatus.Paused, () => {
@@ -47,6 +54,10 @@ class AudioPlayerWrapper {
 
 		//autobind(this);
 	}
+
+	public setMode = (newMode: PlayerMode) => {
+		this.mode = newMode;
+	};
 
 	/**
 	 * @param str String to pass to the play command. Either contains a link or words to search youtube for.
@@ -153,11 +164,12 @@ class AudioPlayerWrapper {
 				);
 			});
 
-			this.musicChannel.send(
+			sendMessage(
 				`Сега слушаме **${
 					this.currentSong.title
 				}** (${this.currentSong.durationString()}).\n` +
 					`След туй иде:\n  ${str.join('  \n')}`,
+				this.musicChannel,
 			);
 		}
 	};
@@ -169,6 +181,11 @@ class AudioPlayerWrapper {
 			this.currentSong = null;
 			await this.musicChannel.send('Край на музиката.');
 			return;
+		}
+
+		if (this.mode == PlayerMode.LoopQueue) {
+			this.currentSong.reset();
+			this.queue.push(this.currentSong);
 		}
 
 		this.currentSong = song;

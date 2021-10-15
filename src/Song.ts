@@ -75,6 +75,11 @@ class Song {
 		);
 	};
 
+	public reset = () => {
+		this.timeElapsed = 0;
+		this.paused = false;
+	};
+
 	public onPause = () => {
 		this.timeElapsed += Date.now() / 1000 - this.timeStarted;
 		this.paused = true;

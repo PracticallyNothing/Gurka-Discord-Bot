@@ -1,11 +1,11 @@
-import { Client, Intents, Message } from 'discord.js';
+import { Client, Intents, Message, TextBasedChannels } from 'discord.js';
 import {
 	joinVoiceChannel,
 	getVoiceConnection,
 	createAudioPlayer,
 	NoSubscriberBehavior,
 	VoiceConnection,
-	DiscordGatewayAdapterCreator,
+	DiscordGatewayAdapterCreator
 } from '@discordjs/voice';
 import { readFileSync } from 'fs';
 import { AudioPlayerWrapper } from './AudioPlayerWrapper';
