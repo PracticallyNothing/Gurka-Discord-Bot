@@ -11,6 +11,12 @@ import { readFileSync } from 'fs';
 import { AudioPlayerWrapper } from './AudioPlayerWrapper.js';
 
 const config = JSON.parse(readFileSync('./config.json').toString('utf-8'));
+
+if (config.token == null) {
+	console.log('ERROR: NO TOKEN IN config.json FOUND!');
+	process.exit(-1);
+}
+
 const client = new Client({
 	intents: [
 		Intents.FLAGS.DIRECT_MESSAGES,
