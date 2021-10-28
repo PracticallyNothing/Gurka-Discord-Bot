@@ -57,7 +57,7 @@ function doMusicCmdChecks(
 	player: AudioPlayerWrapper | null,
 ): MusicCmdError {
 	if (authorIsBot) return MusicCmdError.BotAuthor;
-	if (channelId !== musicChannelId) return MusicCmdError.WrongChannel;
+	//if (channelId !== musicChannelId) return MusicCmdError.WrongChannel;
 	if (voiceChannelId === null) return MusicCmdError.NotInVC;
 	if (player == null) return MusicCmdError.NoPlayer;
 
