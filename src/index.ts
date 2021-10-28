@@ -267,14 +267,14 @@ client.on('messageCreate', async (msg) => {
 			}
 			break;
 
-		case '>povtarqi':
-		case '>loop':
-			if (err == null) {
-				player.changeMode();
-			} else {
-				msg.channel.send(MusicCmdErrorsMap[err]);
-			}
-			break;
+		// case '>povtarqi':
+		// case '>loop':
+		// 	if (err == null) {
+		// 		player.changeMode();
+		// 	} else {
+		// 		msg.channel.send(MusicCmdErrorsMap[err]);
+		// 	}
+		// 	break;
 
 		case '>kvo sledva':
 		case '>kvo sledva?':
