@@ -43,7 +43,7 @@ const musicChannelId = '558738202811432969';
 enum MusicCmdError {
 	OK,
 	BotAuthor,
-	WrongChannel,
+	//WrongChannel,
 	NotInVC,
 	NoPlayer,
 }
@@ -72,7 +72,7 @@ function doMusicCmdChecks(
 
 const MusicCmdErrorsMap = new Map([
 	[MusicCmdError.BotAuthor, 'Ей, лайно, не си пробвай късмета.'],
-	[MusicCmdError.WrongChannel, `Не тука, шефе. <#${musicChannelId}>`],
+	//[MusicCmdError.WrongChannel, `Не тука, шефе. <#${musicChannelId}>`],
 	[MusicCmdError.NotInVC, 'Влез в гласов канал бе...'],
 	[MusicCmdError.NoPlayer, 'Първо трябва да ме поканиш в гласов канал.'],
 ]);
@@ -135,7 +135,7 @@ async function tryJoinVC(
 	);
 
 	if (err !== null && err !== MusicCmdError.NoPlayer) {
-		if (err !== MusicCmdError.WrongChannel || !willPlayMusic) {
+		if (/* err !== MusicCmdError.WrongChannel || */ !willPlayMusic) {
 			await msg.channel.send(MusicCmdErrorsMap[err]);
 			return null;
 		}
