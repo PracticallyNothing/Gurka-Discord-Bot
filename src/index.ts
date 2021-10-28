@@ -8,7 +8,7 @@ import {
 	DiscordGatewayAdapterCreator,
 } from '@discordjs/voice';
 import { readFileSync } from 'fs';
-import { AudioPlayerWrapper } from './AudioPlayerWrapper';
+import { AudioPlayerWrapper } from './AudioPlayerWrapper.js';
 
 const config = JSON.parse(readFileSync('./config.json').toString('utf-8'));
 const client = new Client({

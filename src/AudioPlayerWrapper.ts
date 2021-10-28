@@ -7,8 +7,8 @@ import {
 import { spawn, spawnSync } from 'child_process';
 import { TextBasedChannels } from 'discord.js';
 //import { autobind } from 'ts-class-autobind';
-import { Song } from './Song';
-import { sendMessage } from './Util';
+import { Song } from './Song.js';
+import { sendMessage } from './Util.js';
 
 enum PlayerMode {
 	PlayOnce,
@@ -205,6 +205,8 @@ class AudioPlayerWrapper {
 			'--default-search',
 			'ytsearch',
 			song.url,
+			'2>',
+			`/tmp/gurka-bot-output-stderr-${Date.now()}.txt`,
 		]);
 
 		const { stream, type } = await demuxProbe(child.stdout);
