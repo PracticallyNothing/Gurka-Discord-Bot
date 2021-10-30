@@ -10,6 +10,8 @@ import { TextBasedChannels } from 'discord.js';
 import { Song } from './Song.js';
 import { sendMessage } from './Util.js';
 
+const YTDL_EXE = '/bin/yt-dlp'
+
 enum PlayerMode {
 	PlayOnce,
 	//LoopOneSong,
@@ -97,7 +99,7 @@ class AudioPlayerWrapper {
 
 		songUrls.forEach((url) => {
 			const child = spawnSync(
-				'/bin/youtube-dl',
+                YTDL_EXE,
 				[
 					'--default-search',
 					'ytsearch',
@@ -197,7 +199,7 @@ class AudioPlayerWrapper {
 
 		this.currentSong = song;
 
-		const child = spawn('/bin/youtube-dl', [
+		const child = spawn(YTDL_EXE, [
 			'-f',
 			'bestaudio',
 			'-o',
@@ -205,14 +207,12 @@ class AudioPlayerWrapper {
 			'--default-search',
 			'ytsearch',
 			song.url,
-			'2>',
-			`/tmp/gurka-bot-output-stderr-${Date.now()}.txt`,
 		]);
 
 		const { stream, type } = await demuxProbe(child.stdout);
 		const resource = createAudioResource(stream, { inputType: type });
 
-		const titleContains = (str) =>
+		const titleContains = (str: string) =>
 			this.currentSong.title
 				.toLocaleLowerCase()
 				.indexOf(str.toLocaleLowerCase()) >= 0;

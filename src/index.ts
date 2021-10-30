@@ -172,7 +172,7 @@ client.on('messageCreate', async (msg) => {
 
 	switch (msg.content) {
 		case 'boqn e gej':
-			if (msg.author.id == '787324797860053022') {
+			if (msg.author.id == '337573345765621764') {
 				msg.channel.send('mlukvaj koumi');
 			} else {
 				msg.channel.send('boqn e gej');
