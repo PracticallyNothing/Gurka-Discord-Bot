@@ -297,6 +297,8 @@ client.on('messageCreate', async (msg) => {
 				msg.channel.send(MusicCmdErrorsMap[err]);
 			}
 			break;
+		case '>restart':
+			process.exit(1);
 	}
 
 	if (

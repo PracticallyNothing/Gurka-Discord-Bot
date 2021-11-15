@@ -10,7 +10,7 @@ import { TextBasedChannels } from 'discord.js';
 import { Song } from './Song.js';
 import { sendMessage } from './Util.js';
 
-const YTDL_EXE = '/bin/yt-dlp'
+const YTDL_EXE = '/bin/yt-dlp';
 
 enum PlayerMode {
 	PlayOnce,
@@ -51,6 +51,11 @@ class AudioPlayerWrapper {
 		this.player.on(AudioPlayerStatus.Playing, () => {
 			if (this.currentSong != null) {
 				this.currentSong.onResume();
+			}
+		});
+		this.player.on(AudioPlayerStatus.AutoPaused, () => {
+			if (this.currentSong != null) {
+				this.currentSong.onPause();
 			}
 		});
 
@@ -99,7 +104,7 @@ class AudioPlayerWrapper {
 
 		songUrls.forEach((url) => {
 			const child = spawnSync(
-                YTDL_EXE,
+				YTDL_EXE,
 				[
 					'--default-search',
 					'ytsearch',
