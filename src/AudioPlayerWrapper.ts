@@ -10,7 +10,7 @@ import { TextBasedChannels } from 'discord.js';
 import { Song } from './Song.js';
 import { sendMessage } from './Util.js';
 
-const YTDL_EXE = '/bin/yt-dlp';
+const YTDL_EXE = '/usr/bin/yt-dlp';
 
 enum PlayerMode {
 	PlayOnce,
@@ -253,15 +253,11 @@ class AudioPlayerWrapper {
 	};
 
 	public pause = () => {
-		if (this.player.state.status == AudioPlayerStatus.Playing) {
-			this.player.pause();
-		}
+		this.player.pause();
 	};
 
 	public unpause = () => {
-		if (this.player.state.status == AudioPlayerStatus.Paused) {
-			this.player.unpause();
-		}
+		this.player.unpause();
 	};
 }
 
