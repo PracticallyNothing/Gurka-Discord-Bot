@@ -24,11 +24,10 @@ function secondsToTimeString(
 }
 
 type SerializedSong = {
-	title: string,
-	duration: number,
-	youtubeId: string
+	title: string;
+	duration: number;
+	youtubeId: string;
 };
-
 
 class Song {
 	public title: string;
@@ -68,7 +67,7 @@ class Song {
 		this.duration = duration;
 
 		this.url = `https://www.youtube.com/watch?v=${youtubeId}`;
-		this.youtubeId = youtubeId
+		this.youtubeId = youtubeId;
 
 		//autobind(this);
 	}
@@ -105,10 +104,9 @@ class Song {
 		return {
 			title: this.title,
 			duration: this.duration,
-			youtubeId: this.youtubeId
-		}
-	}
+			youtubeId: this.youtubeId,
+		};
+	};
 }
-
 
 export { SerializedSong, Song };

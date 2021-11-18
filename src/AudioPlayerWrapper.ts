@@ -21,10 +21,10 @@ enum PlayerMode {
 type OnNextSongCallback = () => void;
 
 /**
-* A wrapper around the discord.js AudioPlayer class.
-* Adds queue and dedicated music channel.
-* @see AudioPlayer
-*/
+ * A wrapper around the discord.js AudioPlayer class.
+ * Adds queue and dedicated music channel.
+ * @see AudioPlayer
+ */
 class AudioPlayerWrapper {
 	private player: AudioPlayer;
 	public queue: Song[] = [];
@@ -33,40 +33,40 @@ class AudioPlayerWrapper {
 
 	private mode: PlayerMode = PlayerMode.PlayOnce;
 
-/**
-* @param player Player to use to play music.
-* @param musicTextChannel Channel to use for music messages.
-	*/
+	/**
+	 * @param player Player to use to play music.
+	 * @param musicTextChannel Channel to use for music messages.
+	 */
 	constructor(
 		player: AudioPlayer,
 		musicTextChannel: import('discord.js').TextBasedChannels,
 	) {
-			this.player = player;
-			this.musicChannel = musicTextChannel;
+		this.player = player;
+		this.musicChannel = musicTextChannel;
 
-			this.player.on(AudioPlayerStatus.Idle, () => {
-				for(let cb of this.callbacks) cb();
-				this.playNextSong()
-			});
+		this.player.on(AudioPlayerStatus.Idle, () => {
+			for (let cb of this.callbacks) cb();
+			this.playNextSong();
+		});
 
-			this.player.on(AudioPlayerStatus.Paused, () => {
-				if (this.currentSong != null) {
-					this.currentSong.onPause();
-				}
-			});
-			this.player.on(AudioPlayerStatus.Playing, () => {
-				if (this.currentSong != null) {
-					this.currentSong.onResume();
-				}
-			});
-			this.player.on(AudioPlayerStatus.AutoPaused, () => {
-				if (this.currentSong != null) {
-					this.currentSong.onPause();
-				}
-			});
+		this.player.on(AudioPlayerStatus.Paused, () => {
+			if (this.currentSong != null) {
+				this.currentSong.onPause();
+			}
+		});
+		this.player.on(AudioPlayerStatus.Playing, () => {
+			if (this.currentSong != null) {
+				this.currentSong.onResume();
+			}
+		});
+		this.player.on(AudioPlayerStatus.AutoPaused, () => {
+			if (this.currentSong != null) {
+				this.currentSong.onPause();
+			}
+		});
 
-			//autobind(this);
-		}
+		//autobind(this);
+	}
 
 	public changeMode = () => {
 		switch (this.mode) {
@@ -79,12 +79,14 @@ class AudioPlayerWrapper {
 		}
 	};
 
-	private callbacks: OnNextSongCallback[] = []
-	public onNextSong = (callback: OnNextSongCallback) => { this.callbacks.push(callback) }
+	private callbacks: OnNextSongCallback[] = [];
+	public onNextSong = (callback: OnNextSongCallback) => {
+		this.callbacks.push(callback);
+	};
 
-/**
-* @param str String to pass to the play command. Either contains a link or words to search youtube for.
-	*/
+	/**
+	 * @param str String to pass to the play command. Either contains a link or words to search youtube for.
+	 */
 	public play = async (str: string) => {
 		str = str.trim();
 		const words = str.split(' ');
@@ -127,30 +129,37 @@ class AudioPlayerWrapper {
 				},
 			);
 
-			let buf = "";
+			let buf = '';
 
 			child.stdout.on('data', (data: string) => {
 				let numSongs = 0;
 				let json: any;
 
 				try {
-					json = JSON.parse(buf + data)
+					json = JSON.parse(buf + data);
 				} catch {
 					buf += data;
-					return
+					return;
+				}
+
+				if (json == undefined) {
+					this.musicChannel.send('**#** Не го намерих туй???');
+					return;
 				}
 
 				let entries: any[] = json['entries'];
 
-				if(entries == undefined) {
-					entries = [{
-						'title': json['title'],
-						'duration': json['duration'],
-						'id': json['id']
-					}]
+				if (entries == undefined) {
+					entries = [
+						{
+							title: json['title'],
+							duration: json['duration'],
+							id: json['id'],
+						},
+					];
 				}
 
-				for(let e of entries) {
+				for (let e of entries) {
 					const song = new Song(e['title'], e['duration'], e['id']);
 
 					if (this.queue.length > 0 || this.currentSong != null) {
@@ -165,21 +174,25 @@ class AudioPlayerWrapper {
 				}
 
 				this.musicChannel.send(
-					`+ Добавих ${numSongs} ${numSongs > 1 ? 'песни' : 'песен'}.`,
+					`+ Добавих ${numSongs} ${
+						numSongs > 1 ? 'песни' : 'песен'
+					}.`,
 				);
 			});
-		})
+		});
 	};
 
 	public initFromQueue = (q: SerializedSong[]) => {
-		if(this.queue.length != 0) {
-			console.error("Attempted to init from queue when queue isn't empty.")
-			return
+		if (this.queue.length != 0) {
+			console.error(
+				"Attempted to init from queue when queue isn't empty.",
+			);
+			return;
 		}
 
-		this.queue = q.map(s => new Song(s.title, s.duration, s.youtubeId))
-		this.playNextSong()
-	}
+		this.queue = q.map((s) => new Song(s.title, s.duration, s.youtubeId));
+		this.playNextSong();
+	};
 
 	public printCurrentSong = () => {
 		if (this.currentSong == null) {
@@ -251,9 +264,9 @@ class AudioPlayerWrapper {
 		const resource = createAudioResource(stream, { inputType: type });
 
 		const titleContains = (str: string) =>
-		this.currentSong.title
-			.toLocaleLowerCase()
-			.indexOf(str.toLocaleLowerCase()) >= 0;
+			this.currentSong.title
+				.toLocaleLowerCase()
+				.indexOf(str.toLocaleLowerCase()) >= 0;
 
 		if (titleContains('bladee')) {
 			await this.musicChannel.send('il be blejd');
