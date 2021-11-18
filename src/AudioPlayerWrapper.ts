@@ -4,10 +4,10 @@ import {
 	createAudioResource,
 	demuxProbe,
 } from '@discordjs/voice';
-import { spawn, spawnSync } from 'child_process';
+import { spawn } from 'child_process';
 import { TextBasedChannels } from 'discord.js';
 //import { autobind } from 'ts-class-autobind';
-import { Song } from './Song.js';
+import { SerializedSong, Song } from './Song.js';
 import { sendMessage } from './Util.js';
 
 const YTDL_EXE = '/usr/bin/yt-dlp';
@@ -18,49 +18,55 @@ enum PlayerMode {
 	LoopQueue,
 }
 
+type OnNextSongCallback = () => void;
+
 /**
- * A wrapper around the discord.js AudioPlayer class.
- * Adds queue and dedicated music channel.
- * @see AudioPlayer
- */
+* A wrapper around the discord.js AudioPlayer class.
+* Adds queue and dedicated music channel.
+* @see AudioPlayer
+*/
 class AudioPlayerWrapper {
 	private player: AudioPlayer;
-	private queue: Song[] = [];
+	public queue: Song[] = [];
 	public musicChannel: TextBasedChannels;
 	public currentSong: Song = null;
 
 	private mode: PlayerMode = PlayerMode.PlayOnce;
 
-	/**
-	 * @param player Player to use to play music.
-	 * @param musicTextChannel Channel to use for music messages.
-	 */
+/**
+* @param player Player to use to play music.
+* @param musicTextChannel Channel to use for music messages.
+	*/
 	constructor(
 		player: AudioPlayer,
 		musicTextChannel: import('discord.js').TextBasedChannels,
 	) {
-		this.player = player;
-		this.musicChannel = musicTextChannel;
+			this.player = player;
+			this.musicChannel = musicTextChannel;
 
-		this.player.on(AudioPlayerStatus.Idle, this.playNextSong);
-		this.player.on(AudioPlayerStatus.Paused, () => {
-			if (this.currentSong != null) {
-				this.currentSong.onPause();
-			}
-		});
-		this.player.on(AudioPlayerStatus.Playing, () => {
-			if (this.currentSong != null) {
-				this.currentSong.onResume();
-			}
-		});
-		this.player.on(AudioPlayerStatus.AutoPaused, () => {
-			if (this.currentSong != null) {
-				this.currentSong.onPause();
-			}
-		});
+			this.player.on(AudioPlayerStatus.Idle, () => {
+				for(let cb of this.callbacks) cb();
+				this.playNextSong()
+			});
 
-		//autobind(this);
-	}
+			this.player.on(AudioPlayerStatus.Paused, () => {
+				if (this.currentSong != null) {
+					this.currentSong.onPause();
+				}
+			});
+			this.player.on(AudioPlayerStatus.Playing, () => {
+				if (this.currentSong != null) {
+					this.currentSong.onResume();
+				}
+			});
+			this.player.on(AudioPlayerStatus.AutoPaused, () => {
+				if (this.currentSong != null) {
+					this.currentSong.onPause();
+				}
+			});
+
+			//autobind(this);
+		}
 
 	public changeMode = () => {
 		switch (this.mode) {
@@ -73,9 +79,12 @@ class AudioPlayerWrapper {
 		}
 	};
 
-	/**
-	 * @param str String to pass to the play command. Either contains a link or words to search youtube for.
-	 */
+	private callbacks: OnNextSongCallback[] = []
+	public onNextSong = (callback: OnNextSongCallback) => { this.callbacks.push(callback) }
+
+/**
+* @param str String to pass to the play command. Either contains a link or words to search youtube for.
+	*/
 	public play = async (str: string) => {
 		str = str.trim();
 		const words = str.split(' ');
@@ -103,50 +112,74 @@ class AudioPlayerWrapper {
 		}
 
 		songUrls.forEach((url) => {
-			const child = spawnSync(
+			const child = spawn(
 				YTDL_EXE,
 				[
 					'--default-search',
 					'ytsearch',
 					'--flat-playlist',
-					'--dump-json',
+					'--dump-single-json',
 					url,
 				],
 				{
 					cwd: process.cwd(),
-					env: process.env,
 					stdio: 'pipe',
-					encoding: 'utf-8',
 				},
 			);
 
-			let numSongs = 0;
-			child.stdout.split('\n').forEach((json) => {
-				if (json.trim().length == 0) return;
+			let buf = "";
 
-				const info = JSON.parse(json);
-				const song = new Song(
-					info['title'],
-					info['duration'],
-					info['id'],
-				);
+			child.stdout.on('data', (data: string) => {
+				let numSongs = 0;
+				let json: any;
 
-				if (this.queue.length > 0 || this.currentSong != null) {
-					this.queue.push(song);
-				} else {
-					this.currentSong = song;
-					this.queue.push(song);
-					this.playNextSong();
+				try {
+					json = JSON.parse(buf + data)
+				} catch {
+					buf += data;
+					return
 				}
 
-				numSongs++;
-			});
+				let entries: any[] = json['entries'];
 
-			this.musicChannel.send(
-				`+ Добавих ${numSongs} ${numSongs > 1 ? 'песни' : 'песен'}.`,
-			);
-		});
+				if(entries == undefined) {
+					entries = [{
+						'title': json['title'],
+						'duration': json['duration'],
+						'id': json['id']
+					}]
+				}
+
+				for(let e of entries) {
+					const song = new Song(e['title'], e['duration'], e['id']);
+
+					if (this.queue.length > 0 || this.currentSong != null) {
+						this.queue.push(song);
+					} else {
+						this.currentSong = song;
+						this.queue.push(song);
+						this.playNextSong();
+					}
+
+					numSongs++;
+				}
+
+				this.musicChannel.send(
+					`+ Добавих ${numSongs} ${numSongs > 1 ? 'песни' : 'песен'}.`,
+				);
+			});
+		})
 	};
+
+	public initFromQueue = (q: SerializedSong[]) => {
+		if(this.queue.length != 0) {
+			console.error("Attempted to init from queue when queue isn't empty.")
+			return
+		}
+
+		this.queue = q.map(s => new Song(s.title, s.duration, s.youtubeId))
+		this.playNextSong()
+	}
 
 	public printCurrentSong = () => {
 		if (this.currentSong == null) {
@@ -218,9 +251,9 @@ class AudioPlayerWrapper {
 		const resource = createAudioResource(stream, { inputType: type });
 
 		const titleContains = (str: string) =>
-			this.currentSong.title
-				.toLocaleLowerCase()
-				.indexOf(str.toLocaleLowerCase()) >= 0;
+		this.currentSong.title
+			.toLocaleLowerCase()
+			.indexOf(str.toLocaleLowerCase()) >= 0;
 
 		if (titleContains('bladee')) {
 			await this.musicChannel.send('il be blejd');

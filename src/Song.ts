@@ -23,6 +23,13 @@ function secondsToTimeString(
 	}
 }
 
+type SerializedSong = {
+	title: string,
+	duration: number,
+	youtubeId: string
+};
+
+
 class Song {
 	public title: string;
 
@@ -40,6 +47,9 @@ class Song {
 
 	/** Duration of song in seconds. */
 	private duration: number;
+
+	private youtubeId: string;
+
 	public url: string;
 
 	/**
@@ -58,6 +68,7 @@ class Song {
 		this.duration = duration;
 
 		this.url = `https://www.youtube.com/watch?v=${youtubeId}`;
+		this.youtubeId = youtubeId
 
 		//autobind(this);
 	}
@@ -89,6 +100,15 @@ class Song {
 		this.timeStarted = Date.now() / 1000;
 		this.paused = false;
 	};
+
+	public serialize = (): SerializedSong => {
+		return {
+			title: this.title,
+			duration: this.duration,
+			youtubeId: this.youtubeId
+		}
+	}
 }
 
-export { Song };
+
+export { SerializedSong, Song };
