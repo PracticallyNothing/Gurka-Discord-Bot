@@ -131,6 +131,9 @@ class AudioPlayerWrapper {
 
 			let buf = '';
 
+			// Print any errors out to the console.
+			child.stderr.on('data', (data: string) => { console.error(data) })
+
 			child.stdout.on('data', (data: string) => {
 				let numSongs = 0;
 				let json: any;
