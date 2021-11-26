@@ -4,7 +4,7 @@ ENV TZ=Europe/Sofia
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 RUN apt-get update -y
-RUN apt-get install curl
+RUN apt-get install -y curl
 RUN curl -fsSL https://deb.nodesource.com/setup_16.x | bash -
 
 RUN apt-get install -y libtool python3 python3-pip nodejs
