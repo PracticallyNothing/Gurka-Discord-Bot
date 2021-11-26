@@ -10,7 +10,7 @@ import { TextBasedChannels } from 'discord.js';
 import { SerializedSong, Song } from './Song.js';
 import { sendMessage } from './Util.js';
 
-const YTDL_EXE = '/usr/bin/yt-dlp';
+const YTDL_EXE = 'yt-dlp';
 
 enum PlayerMode {
 	PlayOnce,
