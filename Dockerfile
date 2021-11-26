@@ -18,6 +18,7 @@ RUN npm ci
 RUN npm install typescript
 
 COPY src/ ./src/
+COPY tsconfig.json ./
 RUN mkdir dist/
 RUN npm run build
 
