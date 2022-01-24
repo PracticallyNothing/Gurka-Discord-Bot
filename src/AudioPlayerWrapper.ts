@@ -4,9 +4,8 @@ import {
 	createAudioResource,
 	demuxProbe,
 } from '@discordjs/voice';
-import { spawn } from 'child_process';
-import { TextBasedChannels } from 'discord.js';
-//import { autobind } from 'ts-class-autobind';
+import { spawn, ChildProcessWithoutNullStreams } from 'child_process';
+import { BaseGuildTextChannel } from 'discord.js';
 import { SerializedSong, Song } from './Song.js';
 import { sendMessage } from './Util.js';
 
@@ -28,19 +27,19 @@ type OnNextSongCallback = () => void;
 class AudioPlayerWrapper {
 	private player: AudioPlayer;
 	public queue: Song[] = [];
-	public musicChannel: TextBasedChannels;
+	public musicChannel: BaseGuildTextChannel;
 	public currentSong: Song = null;
 
 	private mode: PlayerMode = PlayerMode.PlayOnce;
+
+	private ytdl_process: ChildProcessWithoutNullStreams = null;
 
 	/**
 	 * @param player Player to use to play music.
 	 * @param musicTextChannel Channel to use for music messages.
 	 */
-	constructor(
-		player: AudioPlayer,
-		musicTextChannel: import('discord.js').TextBasedChannels,
-	) {
+	constructor(player: AudioPlayer, musicTextChannel: BaseGuildTextChannel)
+	{
 		this.player = player;
 		this.musicChannel = musicTextChannel;
 
@@ -64,8 +63,6 @@ class AudioPlayerWrapper {
 				this.currentSong.onPause();
 			}
 		});
-
-		//autobind(this);
 	}
 
 	public changeMode = () => {
@@ -88,6 +85,7 @@ class AudioPlayerWrapper {
 	 * @param str String to pass to the play command. Either contains a link or words to search youtube for.
 	 */
 	public play = async (str: string) => {
+		console.log(`   [AudioPlayerWrapper, ${this.musicChannel.guild.name}]: play("${str}")`)
 		str = str.trim();
 		const words = str.split(' ');
 
@@ -128,6 +126,8 @@ class AudioPlayerWrapper {
 					stdio: 'pipe',
 				},
 			);
+
+			console.log(`    [AudioPlayerWrapper, ${this.musicChannel.guild.name}]: Searching for "${url}".`)
 
 			let buf = '';
 
@@ -263,6 +263,9 @@ class AudioPlayerWrapper {
 			song.url,
 		]);
 
+		this.ytdl_process = child;
+		child.on('exit', () => { this.ytdl_process = null });
+
 		const { stream, type } = await demuxProbe(child.stdout);
 		const resource = createAudioResource(stream, { inputType: type });
 
@@ -287,6 +290,9 @@ class AudioPlayerWrapper {
 
 	public skip = () => {
 		this.player.stop();
+
+		if(this.ytdl_process)
+			this.ytdl_process.kill();
 
 		if (this.currentSong == null) {
 			this.queue.unshift();
