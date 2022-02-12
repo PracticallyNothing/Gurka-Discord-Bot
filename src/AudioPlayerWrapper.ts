@@ -138,7 +138,7 @@ class AudioPlayerWrapper {
 
 				songUrls.push(word);
 			} else {
-				justWordsBuf += word;
+				justWordsBuf += word + ' ';
 			}
 		});
 
