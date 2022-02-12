@@ -46,17 +46,14 @@ class AudioPlayerWrapper {
 		this.musicChannel = musicTextChannel;
 		this.guildName = this.musicChannel.guild.name;
 
-		this.player.on("debug", msg => {
-			log(`[${this.guildName}]: AudioPlayerWrapper debug: ${msg}.`)
+		this.player.on("error", err => {
+			log(`[${this.guildName}]: AudioPlayerWrapper error: ${err.name}: ${err.message}.`)
 		})
 
+		// WARN: Това не бачка когато бота е изритан от някой канал,
+		//       само когато сам напусне.
 		this.player.on("unsubscribe", _sub => {
-			// TODO: Отговори на въпроса в лога.
-			log(`[${this.guildName}]: AudioPlayerWrapper just unsubscribed. Did we get disconnected/kicked from a channel?`)
-		})
-
-		this.player.on("error", error => {
-			log(`[${this.guildName}]: AudioPlayerWrapper encountered error -> (${error.name} ${error.message}).`)
+			log(`[${this.guildName}]: AudioPlayerWrapper just unsubscribed.`)
 		})
 
 		this.player.on(AudioPlayerStatus.Idle, () => {
@@ -91,9 +88,7 @@ class AudioPlayerWrapper {
 
 		this.player.on(AudioPlayerStatus.Buffering, (_oldState, newState) => {
 			const durationMs = newState.resource.playbackDuration
-			const seconds = durationMs / 1000 % 60;
-			const mins =  durationMs / 1000.0 / 60.0;
-			log(`[${this.guildName}]: AudioPlayerWrapper is Buffering (${mins}:${seconds}).`)
+			log(`[${this.guildName}]: AudioPlayerWrapper is Buffering (${durationMs}).`)
 		});
 	}
 
