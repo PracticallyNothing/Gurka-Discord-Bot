@@ -143,9 +143,13 @@ async function doJoinVC(msg: MessageContext): Promise<JoinVoiceResult> {
 	if (msg.senderVoiceChannelId == null)
 		return JoinVoiceResult.Error_SenderNotInVC;
 
-	if (globalVoiceState.has(msg.guildId) && 
-		globalVoiceState.get(msg.guildId).voiceConnection.joinConfig.channelId != msg.senderVoiceChannelId)
-		return JoinVoiceResult.Error_AlreadyInVC;
+	if (globalVoiceState.has(msg.guildId)) {
+		if(globalVoiceState.get(msg.guildId).voiceConnection.joinConfig.channelId != msg.senderVoiceChannelId) {
+			return JoinVoiceResult.Error_AlreadyInVC;
+		} else {
+			return JoinVoiceResult.OK;
+		}
+	}
 
 	let voiceConnection = joinVoiceChannel({
 		guildId: msg.guildId,
