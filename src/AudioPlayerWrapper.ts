@@ -47,17 +47,17 @@ class AudioPlayerWrapper {
 		this.guildName = this.musicChannel.guild.name;
 
 		this.player.on("error", err => {
-			log(`[${this.guildName}]: AudioPlayerWrapper error: ${err.name}: ${err.message}.`)
+			log(`[${this.guildName}] AudioPlayerWrapper error: ${err.name}: ${err.message}.`)
 		})
 
 		// WARN: Това не бачка когато бота е изритан от някой канал,
 		//       само когато сам напусне.
 		this.player.on("unsubscribe", _sub => {
-			log(`[${this.guildName}]: AudioPlayerWrapper just unsubscribed.`)
+			log(`[${this.guildName}] AudioPlayerWrapper just unsubscribed.`)
 		})
 
 		this.player.on(AudioPlayerStatus.Idle, () => {
-			log(`[${this.guildName}]: AudioPlayerWrapper is Idle.`)
+			log(`[${this.guildName}] AudioPlayerWrapper is Idle.`)
 
 			for (let cb of this.callbacks)
 				cb(this.queue[0]);
@@ -66,21 +66,21 @@ class AudioPlayerWrapper {
 		});
 
 		this.player.on(AudioPlayerStatus.Paused, () => {
-			log(`[${this.guildName}]: AudioPlayerWrapper is Paused.`)
+			log(`[${this.guildName}] AudioPlayerWrapper is Paused.`)
 
 			if (this.currentSong != null)
 				this.currentSong.onPause();
 		});
 
 		this.player.on(AudioPlayerStatus.Playing, (_oldState, newState) => {
-			log(`[${this.guildName}]: AudioPlayerWrapper is Playing (${newState.playbackDuration}ms).`)
+			log(`[${this.guildName}] AudioPlayerWrapper is Playing (${newState.playbackDuration}ms).`)
 
 			if (this.currentSong != null)
 				this.currentSong.onResume();
 		});
 
 		this.player.on(AudioPlayerStatus.AutoPaused, (_oldState, _newState) => {
-			log(`[${this.guildName}]: AudioPlayerWrapper is AutoPaused.`)
+			log(`[${this.guildName}] AudioPlayerWrapper is AutoPaused.`)
 
 			if (this.currentSong != null)
 				this.currentSong.onPause();
@@ -88,7 +88,7 @@ class AudioPlayerWrapper {
 
 		this.player.on(AudioPlayerStatus.Buffering, (_oldState, newState) => {
 			const durationMs = newState.resource.playbackDuration
-			log(`[${this.guildName}]: AudioPlayerWrapper is Buffering (${durationMs}).`)
+			log(`[${this.guildName}] AudioPlayerWrapper is Buffering (${durationMs}).`)
 		});
 	}
 
@@ -115,7 +115,7 @@ class AudioPlayerWrapper {
 	// FIXME: Защо бота просто понякога изобщо не пуска песен?
 	// FIXME: Защо търсенето на песни е толкова ебано?
 	public play = async (str: string) => {
-		log(`[${this.guildName}]: AudioPlayerWrapper.play("${str}")`);
+		log(`[${this.guildName}] AudioPlayerWrapper.play("${str}")`);
 
 		str = str.trim();
 		const words = str.split(' ');
@@ -158,7 +158,7 @@ class AudioPlayerWrapper {
 				},
 			);
 
-			log(`[${this.guildName}]: AudioPlayerWrapper.play(): Searching for "${url}".`);
+			log(`[${this.guildName}] AudioPlayerWrapper.play(): Searching for "${url}".`);
 
 			let buf = '';
 
@@ -303,12 +303,12 @@ class AudioPlayerWrapper {
 		]);
 
 		this.ytdl_process = child;
-		log(`[${this.guildName}] Player spawned YTDL ${child.pid}.`)
+		log(`[${this.guildName}] AudioPlayerWrapper spawned YTDL ${child.pid}.`)
 
 		// FIXME: ytdl процесите не умират, въпреки този код.
 		//        Сигурно ли е, че работи?
 		child.on('exit', () => {
-			log(`[${this.guildName}] Player's YTDL ${child.pid} exited.`)
+			log(`[${this.guildName}] AudioPlayerWrapper YTDL ${child.pid} exited.`)
 			this.ytdl_process = null;
 		});
 
