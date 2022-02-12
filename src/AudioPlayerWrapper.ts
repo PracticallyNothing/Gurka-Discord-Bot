@@ -72,8 +72,8 @@ class AudioPlayerWrapper {
 				this.currentSong.onPause();
 		});
 
-		this.player.on(AudioPlayerStatus.Playing, () => {
-			log(`[${this.guildName}]: AudioPlayerWrapper is Playing.`)
+		this.player.on(AudioPlayerStatus.Playing, (_oldState, newState) => {
+			log(`[${this.guildName}]: AudioPlayerWrapper is Playing (${newState.playbackDuration}ms).`)
 
 			if (this.currentSong != null)
 				this.currentSong.onResume();
