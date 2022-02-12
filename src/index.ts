@@ -168,9 +168,13 @@ client.on('messageCreate', async (msg) => {
 		return;
 	}
 
+	if(msg.content == ">kill")
+		process.exit(-1)
+
 	if (msg.content.startsWith('>nick ')) {
 		let self = await msg.guild.members.fetch(client.user.id);
 		self.setNickname(msg.content.substr('>nick '.length));
+		return;
 	}
 });
 
