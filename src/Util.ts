@@ -33,4 +33,9 @@ async function sendMessage(message: string, channel: BaseGuildTextChannel) {
 	sendMessage(message.substr(i), channel);
 }
 
-export { sendMessage };
+function log(msg: string) {
+	const time = new Date();
+	console.log(`${time.toISOString()}: ${msg}`);
+}
+
+export { sendMessage, log };

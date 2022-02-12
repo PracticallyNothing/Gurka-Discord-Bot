@@ -5,11 +5,13 @@ import {
 	NoSubscriberBehavior,
 	VoiceConnection,
 } from '@discordjs/voice';
-import { BaseGuildTextChannel, Client } from 'discord.js';
-import { AudioPlayerWrapper } from './AudioPlayerWrapper';
+import { BaseGuildTextChannel, BaseGuildVoiceChannel, Client } from 'discord.js';
+import { AudioPlayerWrapper } from './AudioPlayerWrapper.js';
 
+/// Result of a command that's been run. If error is non-null, it's considered that the command failed.
 export type CommandResult = {
 	response: string | null;
+	/// Error string if an error occurred.
 	error: string | null;
 };
 
@@ -127,22 +129,23 @@ type VoiceState = {
 	player: AudioPlayerWrapper;
 };
 
-const globalVoiceState: Map<string, VoiceState> = new Map();
+type GuildId = string;
 
-async function doJoinVC(msg: MessageContext): Promise<CommandResult> {
-	if (msg.senderVoiceChannelId == null) {
-		return {
-			response: null,
-			error: 'You must be in a voice channel for me to enter!',
-		};
-	}
+const globalVoiceState: Map<GuildId, VoiceState> = new Map();
 
-	if (globalVoiceState.has(msg.guildId)) {
-		return {
-			response: null,
-			error: "I've already joined another voice channel!",
-		};
-	}
+enum JoinVoiceResult {
+	OK,
+	Error_SenderNotInVC,
+	Error_AlreadyInVC,
+}
+
+async function doJoinVC(msg: MessageContext): Promise<JoinVoiceResult> {
+	if (msg.senderVoiceChannelId == null)
+		return JoinVoiceResult.Error_SenderNotInVC;
+
+	if (globalVoiceState.has(msg.guildId) && 
+		globalVoiceState.get(msg.guildId).voiceConnection.joinConfig.channelId != msg.senderVoiceChannelId)
+		return JoinVoiceResult.Error_AlreadyInVC;
 
 	let voiceConnection = joinVoiceChannel({
 		guildId: msg.guildId,
@@ -159,45 +162,53 @@ async function doJoinVC(msg: MessageContext): Promise<CommandResult> {
 
 	let wrapper = new AudioPlayerWrapper(
 		player,
-		(await msg.client.channels.fetch(
-			msg.channelId,
-		)) as BaseGuildTextChannel,
+		(await msg.client.channels.fetch(msg.channelId)) as BaseGuildTextChannel,
 	);
 
-	globalVoiceState.set(msg.senderVoiceChannelId, {
+	globalVoiceState.set(msg.guildId, {
 		voiceConnection: voiceConnection,
 		player: wrapper,
 	});
 
-	return {
-		response: 'Идвам.',
-		error: null,
-	};
+	return JoinVoiceResult.OK;
 }
 
 // Can only join 1 VC per server (guild).
 // User who asked for join must be in VC.
 // TODO: VC must exist until we've joined. (currently not checked)
 export class JoinVoiceChannelCommand implements Command {
-	name: () => '>join';
-	description: () => 'Присъединяване към гласов канал';
-	aliases?: () => ['>ela', 'ai laf', 'laf?'];
+	public name = () => '>join';
+	public description = () => 'Присъединяване към гласов канал';
+	public aliases? = () => ['>ela', 'laf?'];
 
 	public execute = async (
 		msg: MessageContext,
 		_args?: string,
 	): Promise<CommandResult> => {
-		return doJoinVC(msg);
+		switch (await doJoinVC(msg)) {
+			case JoinVoiceResult.OK:
+				return { response: 'Идвам.', error: null };
+			case JoinVoiceResult.Error_SenderNotInVC:
+				return {
+					response: null,
+					error: 'You must be in a voice channel!',
+				};
+			case JoinVoiceResult.Error_AlreadyInVC:
+				return {
+					response: null,
+					error: 'I already am in another voice channel!',
+				};
+		}
 	};
 }
 
 export class LeaveVoiceChannelCommand implements Command {
-	name: () => '>leave';
-	description: () => 'Напуска гласов канал.';
-	aliases?: () => ['>marsh', '>mahaj se'];
+	public name = () => '>leave';
+	public description = () => 'Напуска гласов канал.';
+	public aliases? = () => ['>marsh'];
 
 	public execute = async (msg: MessageContext): Promise<CommandResult> => {
-		if (globalVoiceState.has(msg.guildId)) {
+		if (!globalVoiceState.has(msg.guildId)) {
 			return {
 				response: null,
 				error: "I'm not in a voice channel.",
@@ -206,26 +217,174 @@ export class LeaveVoiceChannelCommand implements Command {
 
 		globalVoiceState.get(msg.guildId).voiceConnection.destroy();
 		globalVoiceState.delete(msg.guildId);
+
+		return { response: "Аре до после.", error: null }
 	};
 }
 
 export class PlayMusicCommand implements Command {
-	name: () => '>play';
-	description: () => 'Пусни музика';
-	aliases?: () => [''];
+	public name = () => '>play';
+	public description = () => 'Пусни музика';
+	public aliases? = () => ['>pusni', '>p'];
 
 	public execute = async (
 		msg: MessageContext,
 		args: string,
 	): Promise<CommandResult> => {
-		let res = await doJoinVC(msg);
-		if (res.error != null) return res;
+		switch (await doJoinVC(msg)) {
+			case JoinVoiceResult.Error_SenderNotInVC:
+				return {
+					response: null,
+					error: 'You must be in a voice channel to play music!',
+				};
+			case JoinVoiceResult.Error_AlreadyInVC:
+				return {
+					response: null,
+					error: "I'm already playing music in another voice channel",
+				};
+		}
 
 		globalVoiceState.get(msg.guildId).player.play(args);
 
+		// TODO: Може би AudioPlayerWrapper не трябва изписва съобщение за добавена песен,
+		//       а от тук да става това.
 		return {
 			response: null,
 			error: null,
 		};
 	};
 }
+
+/** @returns Error string or null if there is no error. */
+async function musicCmdSanityChecks(msg: MessageContext): Promise<string | null> {
+	if(msg.senderVoiceChannelId == null)
+		return "You must be in a voice channel!"
+
+	let vc: BaseGuildVoiceChannel = await msg.client.channels.fetch(msg.senderVoiceChannelId) as BaseGuildVoiceChannel
+
+	// TODO: Това включва ли ситуацията, в която бота няма permissions, за да влезе?
+	if(!vc.joinable)
+		return "I can't join into that VC!";
+
+	let vs = globalVoiceState.get(msg.guildId)
+
+	if(vs == null)
+		return "I'm not in your voice channel!"
+
+	return null
+}
+
+export class ResumeMusicCommand implements Command {
+	public name = () => '>resume';
+	public description = () => 'Продължава спряна музика.';
+	public aliases? = () => ['>daj'];
+
+	public execute = async (
+		msg: MessageContext,
+		_args: string,
+	): Promise<CommandResult> => {
+		let err = await musicCmdSanityChecks(msg);
+
+		if(err != null)
+			return { response: null, error: err }
+
+		globalVoiceState.get(msg.guildId).player.unpause()
+		return { response: null, error: null }
+	}
+}
+export class PauseMusicCommand implements Command {
+	public name = () => '>pause';
+	public description = () => 'Паузира музика.';
+	public aliases? = () => ['>spri'];
+
+	public execute = async (
+		msg: MessageContext,
+		_args: string,
+	): Promise<CommandResult> => {
+		let err = await musicCmdSanityChecks(msg);
+
+		if(err != null)
+			return { response: null, error: err }
+
+		globalVoiceState.get(msg.senderVoiceChannelId).player.pause()
+		return { response: null, error: null }
+	}
+}
+export class SkipSongCommand implements Command {
+	public name = () => '>skip';
+	public description = () => 'Пропуска сегашната песен и продължава към следващата.';
+	public aliases? = () => [];
+
+	public execute = async (
+		msg: MessageContext,
+		_args: string,
+	): Promise<CommandResult> => {
+		let err = await musicCmdSanityChecks(msg);
+
+		if(err != null)
+			return { response: null, error: err }
+
+		globalVoiceState.get(msg.guildId).player.skip()
+		return { response: null, error: null }
+	}
+}
+export class ClearMusicQueueCommand implements Command {
+	public name = () => '>clear';
+	public description = () => 'Спира каквото и да свири и изчиства опашката.';
+	public aliases? = () => [];
+
+	public execute = async (
+		msg: MessageContext,
+		_args: string,
+	): Promise<CommandResult> => {
+		let err = await musicCmdSanityChecks(msg);
+
+		if(err != null)
+			return { response: null, error: err }
+
+		globalVoiceState.get(msg.guildId).player.clearQueue()
+		return { response: null, error: null }
+	}
+}
+
+export class NowPlayingCommand implements Command {
+	public name = () => '>nowplaying';
+	public description = () => 'Показва какво свири в момента.';
+	public aliases? = () => ['>np'];
+
+	public execute = async (
+		msg: MessageContext,
+		_args: string,
+	): Promise<CommandResult> => {
+		let err = await musicCmdSanityChecks(msg);
+
+		if(err != null)
+			return { response: null, error: err }
+
+		globalVoiceState.get(msg.guildId).player.printCurrentSong()
+		return { response: null, error: null }
+	}
+}
+
+export class PrintQueueCommand implements Command {
+	public name = () => '>queue';
+	public description = () => 'Показва песента в момента и опашката.';
+	public aliases? = () => ['>q'];
+
+	public execute = async (
+		msg: MessageContext,
+		_args: string,
+	): Promise<CommandResult> => {
+		let err = await musicCmdSanityChecks(msg);
+
+		if(err != null)
+			return { response: null, error: err }
+
+		globalVoiceState.get(msg.guildId).player.printQueue()
+		return { response: null, error: null }
+	}
+}
+
+// TODO: Направи тези.
+// export class RemoveSongCommand implements Command { }
+// export class ShuffleMusicQueueCommand implements Command {}

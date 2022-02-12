@@ -7,7 +7,7 @@ import {
 import { spawn, ChildProcessWithoutNullStreams } from 'child_process';
 import { BaseGuildTextChannel } from 'discord.js';
 import { SerializedSong, Song } from './Song.js';
-import { sendMessage } from './Util.js';
+import { log, sendMessage } from './Util.js';
 
 const YTDL_EXE = 'yt-dlp';
 
@@ -17,7 +17,7 @@ enum PlayerMode {
 	LoopQueue,
 }
 
-type OnNextSongCallback = () => void;
+type OnNextSongCallback = (song?: Song) => void;
 
 /**
  * A wrapper around the discord.js AudioPlayer class.
@@ -25,12 +25,15 @@ type OnNextSongCallback = () => void;
  * @see AudioPlayer
  */
 class AudioPlayerWrapper {
+	// TODO: Реално работа на този клас ли е да изписва неща в музикален канал?
 	private player: AudioPlayer;
+
 	public queue: Song[] = [];
 	public musicChannel: BaseGuildTextChannel;
 	public currentSong: Song = null;
 
 	private mode: PlayerMode = PlayerMode.PlayOnce;
+	private guildName: string;
 
 	private ytdl_process: ChildProcessWithoutNullStreams = null;
 
@@ -38,30 +41,59 @@ class AudioPlayerWrapper {
 	 * @param player Player to use to play music.
 	 * @param musicTextChannel Channel to use for music messages.
 	 */
-	constructor(player: AudioPlayer, musicTextChannel: BaseGuildTextChannel)
-	{
+	constructor(player: AudioPlayer, musicTextChannel: BaseGuildTextChannel) {
 		this.player = player;
 		this.musicChannel = musicTextChannel;
+		this.guildName = this.musicChannel.guild.name;
+
+		this.player.on("debug", msg => {
+			log(`[${this.guildName}]: AudioPlayerWrapper debug: ${msg}.`)
+		})
+
+		this.player.on("unsubscribe", _sub => {
+			// TODO: Отговори на въпроса в лога.
+			log(`[${this.guildName}]: AudioPlayerWrapper just unsubscribed. Did we get disconnected/kicked from a channel?`)
+		})
+
+		this.player.on("error", error => {
+			log(`[${this.guildName}]: AudioPlayerWrapper encountered error -> (${error.name} ${error.message}).`)
+		})
 
 		this.player.on(AudioPlayerStatus.Idle, () => {
-			for (let cb of this.callbacks) cb();
+			log(`[${this.guildName}]: AudioPlayerWrapper is Idle.`)
+
+			for (let cb of this.callbacks)
+				cb(this.queue[0]);
+
 			this.playNextSong();
 		});
 
 		this.player.on(AudioPlayerStatus.Paused, () => {
-			if (this.currentSong != null) {
+			log(`[${this.guildName}]: AudioPlayerWrapper is Paused.`)
+
+			if (this.currentSong != null)
 				this.currentSong.onPause();
-			}
 		});
+
 		this.player.on(AudioPlayerStatus.Playing, () => {
-			if (this.currentSong != null) {
+			log(`[${this.guildName}]: AudioPlayerWrapper is Playing.`)
+
+			if (this.currentSong != null)
 				this.currentSong.onResume();
-			}
 		});
-		this.player.on(AudioPlayerStatus.AutoPaused, () => {
-			if (this.currentSong != null) {
+
+		this.player.on(AudioPlayerStatus.AutoPaused, (_oldState, _newState) => {
+			log(`[${this.guildName}]: AudioPlayerWrapper is AutoPaused.`)
+
+			if (this.currentSong != null)
 				this.currentSong.onPause();
-			}
+		});
+
+		this.player.on(AudioPlayerStatus.Buffering, (_oldState, newState) => {
+			const durationMs = newState.resource.playbackDuration
+			const seconds = durationMs / 1000 % 60;
+			const mins =  durationMs / 1000.0 / 60.0;
+			log(`[${this.guildName}]: AudioPlayerWrapper is Buffering (${mins}:${seconds}).`)
 		});
 	}
 
@@ -84,8 +116,12 @@ class AudioPlayerWrapper {
 	/**
 	 * @param str String to pass to the play command. Either contains a link or words to search youtube for.
 	 */
+	// FIXME: Защо песни над 1 час произволно спират да свирят около 50-та минута?
+	// FIXME: Защо бота просто понякога изобщо не пуска песен?
+	// FIXME: Защо търсенето на песни е толкова ебано?
 	public play = async (str: string) => {
-		console.log(`   [AudioPlayerWrapper, ${this.musicChannel.guild.name}]: play("${str}")`)
+		log(`[${this.guildName}]: AudioPlayerWrapper.play("${str}")`);
+
 		str = str.trim();
 		const words = str.split(' ');
 
@@ -127,12 +163,14 @@ class AudioPlayerWrapper {
 				},
 			);
 
-			console.log(`    [AudioPlayerWrapper, ${this.musicChannel.guild.name}]: Searching for "${url}".`)
+			log(`[${this.guildName}]: AudioPlayerWrapper.play(): Searching for "${url}".`);
 
 			let buf = '';
 
 			// Print any errors out to the console.
-			child.stderr.on('data', (data: string) => { console.error(data) })
+			child.stderr.on('data', (data: string) => {
+				console.error(data);
+			});
 
 			child.stdout.on('data', (data: string) => {
 				let numSongs = 0;
@@ -153,13 +191,11 @@ class AudioPlayerWrapper {
 				let entries: any[] = json['entries'];
 
 				if (entries == undefined) {
-					entries = [
-						{
-							title: json['title'],
-							duration: json['duration'],
-							id: json['id'],
-						},
-					];
+					entries = [{
+						title: json['title'],
+						duration: json['duration'],
+						id: json['id'],
+					}];
 				}
 
 				for (let e of entries) {
@@ -176,68 +212,76 @@ class AudioPlayerWrapper {
 					numSongs++;
 				}
 
-				this.musicChannel.send(
-					`+ Добавих ${numSongs} ${
-						numSongs > 1 ? 'песни' : 'песен'
-					}.`,
-				);
+				// FIXME: Понякога се стига до тази точка и бота изписва "намерих 0 песен".
+				//        Уж не би трябвало да може да стигне до тук.
+				this.musicChannel.send(`+ Добавих ${numSongs} ${numSongs > 1 ? 'песни' : 'песен'}.`);
 			});
 		});
 	};
 
 	public initFromQueue = (q: SerializedSong[]) => {
+		log(`[${this.guildName}] AudioPlayerWrapper.initFromQueue()`)
+
 		if (this.queue.length != 0) {
-			console.error(
-				"Attempted to init from queue when queue isn't empty.",
-			);
+			console.error("Attempted to init from queue when queue isn't empty.");
 			return;
 		}
 
-		this.queue = q.map((s) => new Song(s.title, s.duration, s.youtubeId));
-		this.playNextSong();
+		this.queue = q.map(s => new Song(s.title, s.duration, s.youtubeId));
+		if(this.queue.length > 0)
+			this.playNextSong();
 	};
 
 	public printCurrentSong = () => {
+		log(`[${this.guildName}] AudioPlayerWrapper.printCurrentSong()`)
+
 		if (this.currentSong == null) {
 			this.musicChannel.send('Нищо.');
 		} else {
-			this.musicChannel.send(
-				`Слушаме **${
-					this.currentSong.title
-				}** (${this.currentSong.calcTimeElapsedString()}/${this.currentSong.durationString()}).`,
-			);
+			let title = this.currentSong.title;
+			let elapsed = this.currentSong.calcTimeElapsedString(),
+			    duration = this.currentSong.durationString();
+
+			this.musicChannel.send(`Слушаме **${title}** (${elapsed}/${duration}).`);
 		}
 	};
 
 	public printQueue = () => {
+		log(`[${this.guildName}] AudioPlayerWrapper.printQueue()`)
+
 		if (this.queue.length == 0 && this.currentSong == null) {
 			this.musicChannel.send('Нема какво да свириме.');
 		} else if (this.queue.length == 0 && this.currentSong != null) {
-			this.musicChannel.send(
-				`Сега слушаме **${
-					this.currentSong.title
-				}** (${this.currentSong.durationString()}), обаче след туй: нищо.`,
-			);
+			let title = this.currentSong.title;
+			let elapsed = this.currentSong.calcTimeElapsedString(),
+			    duration = this.currentSong.durationString();
+
+			this.musicChannel.send(`Сега слушаме **${title}** (${elapsed}/${duration}), обаче след туй: нищо.`);
 		} else {
 			const str = [];
 
+			let title = this.currentSong.title;
+			let elapsed = this.currentSong.calcTimeElapsedString(),
+			    duration = this.currentSong.durationString();
+
 			this.queue.forEach((song, i) => {
-				str.push(
-					`${i + 1}. **${song.title}** (${song.durationString()})`,
-				);
+				let title = song.title,
+				    duration = song.durationString();
+
+				str.push(`${i + 1}. **${title}** (${duration})`);
 			});
 
 			sendMessage(
-				`Сега слушаме **${
-					this.currentSong.title
-				}** (${this.currentSong.durationString()}).\n` +
-					`След туй иде:\n  ${str.join('  \n')}`,
-				this.musicChannel,
+				`Сега слушаме **${title}** (${elapsed}/${duration}).\n` +
+				`След туй иде:\n  ${str.join('  \n')}`, this.musicChannel,
 			);
 		}
 	};
 
+	// FIXME: Когато започнем от празна опашка от песни, бота изписва "Край на музиката". 
+	//        Но няма нужда да го казва, когато е празно, само когато свърши.
 	private playNextSong = async () => {
+		log(`[${this.guildName}] AudioPlayerWrapper.playNextSong()`)
 		const song = this.queue.shift();
 
 		if (song == undefined) {
@@ -264,7 +308,14 @@ class AudioPlayerWrapper {
 		]);
 
 		this.ytdl_process = child;
-		child.on('exit', () => { this.ytdl_process = null });
+		log(`[${this.guildName}] Player spawned YTDL ${child.pid}.`)
+
+		// FIXME: ytdl процесите не умират, въпреки този код.
+		//        Сигурно ли е, че работи?
+		child.on('exit', () => {
+			log(`[${this.guildName}] Player's YTDL ${child.pid} exited.`)
+			this.ytdl_process = null;
+		});
 
 		const { stream, type } = await demuxProbe(child.stdout);
 		const resource = createAudioResource(stream, { inputType: type });
@@ -282,16 +333,15 @@ class AudioPlayerWrapper {
 			await this.musicChannel.send('il be drejk');
 		}
 
-		this.musicChannel.send(
-			`⏵ Пускаме **${song.title}** (${song.durationString()})!`,
-		);
+		this.musicChannel.send(`⏵ Пускаме **${song.title}** (${song.durationString()})!`);
 		this.player.play(resource);
 	};
 
 	public skip = () => {
+		log(`[${this.guildName}] AudioPlayerWrapper.skip()`)
 		this.player.stop();
 
-		if(this.ytdl_process)
+		if (this.ytdl_process) 
 			this.ytdl_process.kill();
 
 		if (this.currentSong == null) {
@@ -302,16 +352,19 @@ class AudioPlayerWrapper {
 	};
 
 	public clearQueue = () => {
+		log(`[${this.guildName}] AudioPlayerWrapper.clearQueue()`)
 		this.queue = [];
 		this.currentSong = null;
 		this.player.stop();
 	};
 
 	public pause = () => {
+		log(`[${this.guildName}] AudioPlayerWrapper.pause()`)
 		this.player.pause();
 	};
 
 	public unpause = () => {
+		log(`[${this.guildName}] AudioPlayerWrapper.unpause()`)
 		this.player.unpause();
 	};
 }
