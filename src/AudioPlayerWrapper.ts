@@ -163,8 +163,9 @@ class AudioPlayerWrapper {
 			let buf = '';
 
 			// Print any errors out to the console.
-			child.stderr.on('data', (data: string) => {
-				console.error(data);
+			child.stderr.on('data', (data: Buffer) => {
+				log(`[${this.guildName}] YTDL output to stderr follows.`)
+				console.error(data.toString());
 			});
 
 			child.stdout.on('data', (data: string) => {
