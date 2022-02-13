@@ -1,27 +1,4 @@
-import { sprintf } from 'sprintf-js';
-//import { autobind } from 'ts-class-autobind';
-/**
- * Convert a number of seconds into a comma-separated format (hh:mm:ss).
- * @param seconds Seconds to convert to time string.
- * @param forceHours Force displaying hours.
- * @returns The time string in a comma-separated format (hh:mm:ss).
- */
-function secondsToTimeString(
-	seconds: number,
-	forceHours: boolean = false,
-): string {
-	const h = Math.floor(seconds / 3600.0);
-	const m = Math.floor((seconds / 60.0) % 60);
-	const s = Math.floor(seconds % 60);
-
-	if (forceHours) {
-		return sprintf('%02d:%02d:%02d', h, m, s);
-	} else {
-		return h > 0
-			? sprintf('%02d:%02d:%02d', h, m, s)
-			: sprintf('%02d:%02d', m, s);
-	}
-}
+import { secondsToTimeString } from './Util.js'
 
 type SerializedSong = {
 	title: string;
