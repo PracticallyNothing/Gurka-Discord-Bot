@@ -225,11 +225,11 @@ class AudioPlayerWrapper {
 
 				let removedSongsString = "";
 				if (numRemovedSongs > 0)
-					removedSongsString = `Трябваше да махна ${numRemovedSongs} ${numRemovedSongs > 1 ? 'песен' : 'песни'}.`
+					removedSongsString = `(Трябваше да махна ${numRemovedSongs} ${numRemovedSongs > 1 ? 'песен' : 'песни'}.)`
 
 				// FIXME: Понякога се стига до тази точка и бота изписва "намерих 0 песен".
 				//        Уж не би трябвало да е възможно това.
-				this.musicChannel.send(`+ Добавих ${numSongs} ${numSongs > 1 ? 'песни' : 'песен'} (${removedSongsString}).`);
+				this.musicChannel.send(`+ Добавих ${numSongs} ${numSongs > 1 ? 'песни' : 'песен'} ${removedSongsString}.`);
 
 				// FIXME: Оправи грешката свързана с предупреждението.
 				if (hasLongSong)
