@@ -45,8 +45,6 @@ class Song {
 
 		this.url = `https://www.youtube.com/watch?v=${youtubeId}`;
 		this.youtubeId = youtubeId;
-
-		//autobind(this);
 	}
 
 	public durationString = () => {
