@@ -62,4 +62,15 @@ function secondsToTimeString(
 	}
 }
 
-export { sendMessage, log, secondsToTimeString };
+function shuffleArray<T>(arr: T[], skipFirstN: number = 0) {
+	for(let i = arr.length - 1; i > skipFirstN; i--) {
+		let j = Math.floor(Math.random() * i)
+
+		let tmp = arr[i];
+		arr[i] = arr[j];
+		arr[j] = tmp;
+	}
+	return arr;
+}
+
+export { sendMessage, log, secondsToTimeString, shuffleArray };

@@ -7,7 +7,7 @@ import {
 import { spawn, ChildProcessWithoutNullStreams } from 'child_process';
 import { BaseGuildTextChannel } from 'discord.js';
 import { SerializedSong, Song } from './Song.js';
-import { log, sendMessage } from './Util.js';
+import { log, sendMessage, shuffleArray } from './Util.js';
 
 const YTDL_EXE = 'yt-dlp';
 
@@ -398,6 +398,13 @@ class AudioPlayerWrapper {
 				return true;
 		}
 	}
+
+	public shuffle = () => {
+		if (this.queue.length < 2) return;
+		if (this.queue.length === 2) this.queue.reverse();
+		shuffleArray(this.queue)
+	}
 }
 
 export { AudioPlayerWrapper };
+
