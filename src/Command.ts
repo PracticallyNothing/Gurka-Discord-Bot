@@ -455,5 +455,23 @@ export class RemoveSongCommand implements Command {
 	}
 }
 
-// TODO: Направи тези.
-// export class ShuffleMusicQueueCommand implements Command {}
+export class ShuffleMusicQueueCommand implements Command {
+	public name = () => '>shuffle';
+	public aliases? = () => ['>shuf', '>razburkaj'];
+
+	public description = () => 'Размесва песните в опашката.'
+
+	public execute = async (
+		msg: MessageContext,
+		_args: string,
+	): Promise<CommandResult> => {
+		let err = await musicCmdSanityChecks(msg);
+
+		if (err != null)
+			return { response: null, error: err }
+
+		globalVoiceState.get(msg.guildId).player.shuffle();
+
+		return { response: 'Хубу, ей ви разна риба.', error: null }
+	}
+}
