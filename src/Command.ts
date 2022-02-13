@@ -317,7 +317,7 @@ export class PauseMusicCommand implements Command {
 export class SkipSongCommand implements Command {
 	public name = () => '>skip';
 	public description = () => 'Пропуска сегашната песен и продължава към следващата.';
-	public aliases?= () => [];
+	public aliases? = () => ['>s'];
 
 	public execute = async (
 		msg: MessageContext,
