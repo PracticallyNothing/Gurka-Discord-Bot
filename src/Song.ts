@@ -66,15 +66,11 @@ class Song {
 	};
 
 	public onPause = () => {
-		if(this.paused) return;
-
 		this.timeElapsed += Date.now() / 1000 - this.timeStarted;
 		this.paused = true;
 	};
 
 	public onResume = () => {
-		if(!this.paused) return;
-
 		this.timeStarted = Date.now() / 1000;
 		this.paused = false;
 	};

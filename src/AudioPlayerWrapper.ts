@@ -387,7 +387,7 @@ class AudioPlayerWrapper {
 			case "number":
 				if (numOrRange < 1 || numOrRange > this.queue.length)
 					return false;
-				this.queue.splice(numOrRange - 1);
+				this.queue.splice(numOrRange - 1, 1);
 				return true;
 			default:
 				if (numOrRange.begin < 1 || 
