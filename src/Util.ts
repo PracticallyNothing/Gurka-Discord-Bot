@@ -1,18 +1,18 @@
 import { BaseGuildTextChannel } from 'discord.js';
 
 async function sendMessage(message: string, channel: BaseGuildTextChannel) {
-	if(channel == null) {
+	if (channel == null) {
 		console.log(`ERROR: Attempt to send message to null channel.`)
 	}
 
-	if(message == null) {
+	if (message == null) {
 		console.log(`WARNING: Attempted to send null message to channel ${channel.name}`)
 		return;
 	}
 
 	message = message.trim()
 
-	if(message.length == 0) {
+	if (message.length == 0) {
 		console.log(`WARNING: Attempted to send empty message to channel ${channel.name}`)
 		return;
 	}
