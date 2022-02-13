@@ -112,7 +112,8 @@ class AudioPlayerWrapper {
 	};
 
 	/**
-	 * @param str String to pass to the play command. Either contains a link or words to search youtube for.
+	 * @param str String to pass to the play command.
+	 *            Either contains a link or words to search youtube for.
 	 */
 	// FIXME: Защо песни над 1 час произволно спират да свирят около 50-та минута?
 	// FIXME: Защо бота просто понякога изобщо не пуска песен?
@@ -174,6 +175,7 @@ class AudioPlayerWrapper {
 			child.stdout.on('data', (data: string) => {
 				let numSongs = 0;
 				let json: any;
+				let hasLongSong: boolean = false;
 
 				try {
 					json = JSON.parse(buf + data);
@@ -200,6 +202,9 @@ class AudioPlayerWrapper {
 				for (let e of entries) {
 					const song = new Song(e['title'], e['duration'], e['id']);
 
+					if (song.durationString().length > 4) 
+						hasLongSong = true;
+
 					if (this.queue.length > 0 || this.currentSong != null) {
 						this.queue.push(song);
 					} else {
@@ -212,8 +217,12 @@ class AudioPlayerWrapper {
 				}
 
 				// FIXME: Понякога се стига до тази точка и бота изписва "намерих 0 песен".
-				//        Уж не би трябвало да може да стигне до тук.
+				//        Уж не би трябвало да е възможно това.
 				this.musicChannel.send(`+ Добавих ${numSongs} ${numSongs > 1 ? 'песни' : 'песен'}.`);
+
+				// FIXME: Оправи грешката свързана с предупреждението.
+				if (hasLongSong)
+					this.musicChannel.send(':warning: В момента има бъг, поради който песни дълги над час спират около 50-тата минута.')
 			});
 		});
 	};
@@ -278,7 +287,7 @@ class AudioPlayerWrapper {
 	};
 
 	// FIXME: Когато започнем от празна опашка от песни, бота изписва "Край на музиката". 
-	//        Но няма нужда да го казва, когато е празно, само когато свърши.
+	//        Но няма нужда да го казва, когато е празна опашката, само когато свърши.
 	private playNextSong = async () => {
 		log(`[${this.guildName}] AudioPlayerWrapper.playNextSong()`)
 		const song = this.queue.shift();
