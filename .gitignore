@@ -1,5 +1,6 @@
 node_modules
-.vscode
+.vscode/
+.log/
 ./config.json
 *.zip
 config.json
