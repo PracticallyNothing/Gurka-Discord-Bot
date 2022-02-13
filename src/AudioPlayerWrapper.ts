@@ -19,6 +19,9 @@ enum PlayerMode {
 
 type OnNextSongCallback = (song?: Song) => void;
 
+type Range = { begin: number, end: number }
+type NumOrRange = number | Range;
+
 /**
  * A wrapper around the discord.js AudioPlayer class.
  * Adds queue and dedicated music channel.
@@ -363,6 +366,29 @@ class AudioPlayerWrapper {
 		log(`[${this.guildName}] AudioPlayerWrapper.unpause()`)
 		this.player.unpause();
 	};
+
+
+	/** 
+	  * Removes a single song or a range of songs from the queue.
+	  * @param numOrRange A single number or a range of numbers which to remove. Must start at 1, not 0.
+	  * @returns Whether the removal was successful.
+	  */
+	public remove = (numOrRange: NumOrRange) => {
+		switch (typeof (numOrRange)) {
+			case "number":
+				if (numOrRange < 1 || numOrRange > this.queue.length)
+					return false;
+				this.queue.splice(numOrRange - 1);
+				return true;
+			default:
+				if (numOrRange.begin < 1 || 
+					numOrRange.end > this.queue.length ||
+					numOrRange.begin > numOrRange.end)
+					return false;
+				this.queue.splice(numOrRange.begin - 1, numOrRange.end - numOrRange.begin)
+				return true;
+		}
+	}
 }
 
 export { AudioPlayerWrapper };

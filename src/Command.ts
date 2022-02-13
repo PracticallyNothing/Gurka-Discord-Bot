@@ -389,6 +389,71 @@ export class PrintQueueCommand implements Command {
 	}
 }
 
+export class RemoveSongCommand implements Command {
+	public name = () => '>remove';
+	public aliases?= () => ['>rm'];
+
+	public description = () => {
+		let example1 = '`' + this.name() + ' 3`';
+		let example2 = '`' + this.name() + ' 5-10`';
+		return `Маха оказаната песен според подадения номер. Примери: ${example1} ${example2}`;
+	}
+
+	public execute = async (
+		msg: MessageContext,
+		args: string,
+	): Promise<CommandResult> => {
+		let err = await musicCmdSanityChecks(msg);
+
+		if (err != null)
+			return { response: null, error: err }
+
+		if (args.trim().length == 0) {
+			return {
+				response: null,
+				error: 'You must pass in a number (e.g. `>rm 1`) ' +
+					'or a range of numbers (e.g. `>rm 5-10`).'
+			}
+		}
+
+		const player = globalVoiceState.get(msg.guildId).player;
+
+		let arg = args.split(' ')[0].trim()
+
+		if (arg.indexOf('-') >= 0) {
+			let args = arg.split('-').map(parseInt)
+
+			if (args.length != 2) {
+				return {
+					response: null,
+					error: "There must be exactly two numbers in the range."
+				}
+			}
+
+			if (isNaN(args[0]) || isNaN(args[1])) {
+				return {
+					response: null,
+					error: "Parts of range must be numbers."
+				}
+			}
+
+			if (!player.remove({ begin: args[0], end: args[1] })) {
+				return { response: null, error: "Incorrect values for range!" }
+			}
+		} else {
+			let num = parseInt(arg)
+			if (isNaN(num)) {
+				return { response: null, error: "You must pass in a number or a range." }
+			}
+
+			if (!player.remove(num)) {
+				return { response: null, error: "Incorrect song number!" }
+			}
+		}
+
+		return { response: "Готово, махнато.", error: null }
+	}
+}
+
 // TODO: Направи тези.
-// export class RemoveSongCommand implements Command { }
 // export class ShuffleMusicQueueCommand implements Command {}
