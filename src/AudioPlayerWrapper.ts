@@ -224,7 +224,7 @@ class AudioPlayerWrapper {
 		}
 
 		this.queue = q.map(s => new Song(s.title, s.duration, s.youtubeId));
-		if(this.queue.length > 0)
+		if (this.queue.length > 0)
 			this.playNextSong();
 	};
 
@@ -236,7 +236,7 @@ class AudioPlayerWrapper {
 		} else {
 			let title = this.currentSong.title;
 			let elapsed = this.currentSong.calcTimeElapsedString(),
-			    duration = this.currentSong.durationString();
+				duration = this.currentSong.durationString();
 
 			this.musicChannel.send(`Слушаме **${title}** (${elapsed}/${duration}).`);
 		}
@@ -250,7 +250,7 @@ class AudioPlayerWrapper {
 		} else if (this.queue.length == 0 && this.currentSong != null) {
 			let title = this.currentSong.title;
 			let elapsed = this.currentSong.calcTimeElapsedString(),
-			    duration = this.currentSong.durationString();
+				duration = this.currentSong.durationString();
 
 			this.musicChannel.send(`Сега слушаме **${title}** (${elapsed}/${duration}), обаче след туй: нищо.`);
 		} else {
@@ -258,11 +258,11 @@ class AudioPlayerWrapper {
 
 			let title = this.currentSong.title;
 			let elapsed = this.currentSong.calcTimeElapsedString(),
-			    duration = this.currentSong.durationString();
+				duration = this.currentSong.durationString();
 
 			this.queue.forEach((song, i) => {
 				let title = song.title,
-				    duration = song.durationString();
+					duration = song.durationString();
 
 				str.push(`${i + 1}. **${title}** (${duration})`);
 			});
@@ -337,7 +337,7 @@ class AudioPlayerWrapper {
 		log(`[${this.guildName}] AudioPlayerWrapper.skip()`)
 		this.player.stop();
 
-		if (this.ytdl_process) 
+		if (this.ytdl_process)
 			this.ytdl_process.kill();
 
 		if (this.currentSong == null) {
