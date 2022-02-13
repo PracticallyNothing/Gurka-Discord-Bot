@@ -174,8 +174,10 @@ class AudioPlayerWrapper {
 
 			child.stdout.on('data', (data: string) => {
 				let numSongs = 0;
+				let numRemovedSongs = 0;
+				let hasLongSong = false;
+
 				let json: any;
-				let hasLongSong: boolean = false;
 
 				try {
 					json = JSON.parse(buf + data);
@@ -202,7 +204,12 @@ class AudioPlayerWrapper {
 				for (let e of entries) {
 					const song = new Song(e['title'], e['duration'], e['id']);
 
-					if (song.durationString().length > 4) 
+					if (e['duration'] == 0) {
+						numRemovedSongs++;
+						continue;
+					}
+
+					if (e['duration'] >= 50 * 60)
 						hasLongSong = true;
 
 					if (this.queue.length > 0 || this.currentSong != null) {
@@ -216,13 +223,17 @@ class AudioPlayerWrapper {
 					numSongs++;
 				}
 
+				let removedSongsString = "";
+				if (numRemovedSongs > 0)
+					removedSongsString = `Трябваше да махна ${numRemovedSongs} ${numRemovedSongs > 1 ? 'песен' : 'песни'}.`
+
 				// FIXME: Понякога се стига до тази точка и бота изписва "намерих 0 песен".
 				//        Уж не би трябвало да е възможно това.
-				this.musicChannel.send(`+ Добавих ${numSongs} ${numSongs > 1 ? 'песни' : 'песен'}.`);
+				this.musicChannel.send(`+ Добавих ${numSongs} ${numSongs > 1 ? 'песни' : 'песен'} (${removedSongsString}).`);
 
 				// FIXME: Оправи грешката свързана с предупреждението.
 				if (hasLongSong)
-					this.musicChannel.send(':warning: В момента има бъг, поради който песни дълги над час спират около 50-тата минута.')
+					this.musicChannel.send(':warning: В момента има бъг, поради който песни, дълги над час, спират около 50-тата минута.')
 			});
 		});
 	};
@@ -390,7 +401,7 @@ class AudioPlayerWrapper {
 				this.queue.splice(numOrRange - 1, 1);
 				return true;
 			default:
-				if (numOrRange.begin < 1 || 
+				if (numOrRange.begin < 1 ||
 					numOrRange.end > this.queue.length ||
 					numOrRange.begin > numOrRange.end)
 					return false;
