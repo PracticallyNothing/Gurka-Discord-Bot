@@ -14,6 +14,8 @@ import {
 	SkipSongCommand,
 	NowPlayingCommand,
 	PrintQueueCommand,
+	RemoveSongCommand,
+	ShuffleMusicQueueCommand,
 } from './Command.js';
 
 type Config = {
@@ -121,6 +123,9 @@ addCmd(new ClearMusicQueueCommand());
 
 addCmd(new NowPlayingCommand());
 addCmd(new PrintQueueCommand());
+
+addCmd(new RemoveSongCommand());
+addCmd(new ShuffleMusicQueueCommand());
 
 addCmd(new ResponseCommand('>help', 'Помагай, шефе!', [genHelp()]));
 
