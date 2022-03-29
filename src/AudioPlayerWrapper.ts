@@ -346,7 +346,9 @@ class AudioPlayerWrapper {
 
 		if (titleContains('bladee')) {
 			await this.musicChannel.send('il be blejd');
-		} else if (titleContains('KD/A') || titleContains('Pentakill')) {
+		} else if (titleContains('League of Legends') || 
+				   titleContains('KD/A') ||
+				   titleContains('Pentakill')) {
 			await this.musicChannel.send('il be liga');
 		} else if (titleContains('Drake')) {
 			await this.musicChannel.send('il be drejk');

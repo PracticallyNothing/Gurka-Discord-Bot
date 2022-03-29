@@ -310,7 +310,7 @@ export class PauseMusicCommand implements Command {
 		if (err != null)
 			return { response: null, error: err }
 
-		globalVoiceState.get(msg.senderVoiceChannelId).player.pause()
+		globalVoiceState.get(msg.guildId).player.unpause()
 		return { response: null, error: null }
 	}
 }
