@@ -117,7 +117,6 @@ class AudioPlayerWrapper {
 	 */
 	// FIXME: Защо песни над 1 час произволно спират да свирят около 50-та минута?
 	// FIXME: Защо бота просто понякога изобщо не пуска песен?
-	// FIXME: Защо търсенето на песни е толкова ебано?
 	public play = async (str: string) => {
 		log(`[${this.guildName}] AudioPlayerWrapper.play("${str}")`);
 
@@ -340,7 +339,8 @@ class AudioPlayerWrapper {
 		const resource = createAudioResource(stream, { inputType: type });
 
 		const titleContains = (str: string) =>
-			this.currentSong.title
+		   this.currentSong != null 
+		&& this.currentSong.title
 				.toLocaleLowerCase()
 				.indexOf(str.toLocaleLowerCase()) >= 0;
 
@@ -352,6 +352,9 @@ class AudioPlayerWrapper {
 			await this.musicChannel.send('il be liga');
 		} else if (titleContains('Drake')) {
 			await this.musicChannel.send('il be drejk');
+		} else if (titleContains("earrape")) {
+			await this.musicChannel.send('petre gej smotan navri si edna debela truba v zadnika i si pusni priroden gaz v chervoto i posle glutni edna zapalka');
+			this.playNextSong();
 		}
 
 		this.musicChannel.send(`⏵ Пускаме **${song.title}** (${song.durationString()})!`);
