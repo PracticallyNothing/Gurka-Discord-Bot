@@ -281,7 +281,7 @@ async function musicCmdSanityChecks(msg: MessageContext): Promise<string | null>
 export class ResumeMusicCommand implements Command {
 	public name = () => '>resume';
 	public description = () => 'Продължава спряна музика.';
-	public aliases?= () => ['>daj'];
+	public aliases?= () => ['>daj', '>unpause'];
 
 	public execute = async (
 		msg: MessageContext,

@@ -10,6 +10,7 @@ import {
 	MessageContext,
 	PauseMusicCommand,
 	PlayMusicCommand,
+	ResumeMusicCommand,
 	ResponseCommand,
 	SkipSongCommand,
 	NowPlayingCommand,
@@ -87,7 +88,7 @@ function genHelp() {
 }
 
 addCmd(
-	new ResponseCommand('boqn e gej', 'mrazq boqn', [
+	new ResponseCommand('boqn-e-gej', 'mrazq boqn', [
 		'boqn e pedal',
 		'boqn e gej',
 		'boqn e retard',
@@ -104,12 +105,12 @@ addCmd(
 );
 
 addCmd(
-	new ResponseCommand('daj gurka', 'Нали все пак е краставичар?', [
+	new ResponseCommand('daj-gurka', 'Нали все пак е краставичар?', [
 		':cucumber:',
 	]),
 );
 addCmd(
-	new ResponseCommand('daj gurki', 'Нали все пак е краставичар(2)?', [
+	new ResponseCommand('daj-gurki', 'Нали все пак е краставичар(2)?', [
 		':cucumber: :cucumber:',
 	]),
 );
@@ -117,6 +118,7 @@ addCmd(
 addCmd(new JoinVoiceChannelCommand());
 addCmd(new LeaveVoiceChannelCommand());
 addCmd(new PlayMusicCommand());
+addCmd(new ResumeMusicCommand());
 addCmd(new PauseMusicCommand());
 addCmd(new SkipSongCommand());
 addCmd(new ClearMusicQueueCommand());
@@ -178,7 +180,13 @@ client.on('messageCreate', async (msg) => {
 
 	if (msg.content.startsWith('>nick ')) {
 		let self = await msg.guild.members.fetch(client.user.id);
-		self.setNickname(msg.content.substr('>nick '.length));
+		const name = msg.content.substr('>nick'.length)
+
+		if(name.trim().length == 0)
+			self.setNickname("");
+		else
+			self.setNickname(msg.content.substr('>nick '.length));
+
 		return;
 	}
 });
