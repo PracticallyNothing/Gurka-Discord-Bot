@@ -49,7 +49,7 @@ client.once('ready', () => {
 
 var Commands: Command[] = []
 /** Map from command name to index in Commands array. */
-var CommandLookup: Map<string, number> = new Map();
+	var CommandLookup: Map<string, number> = new Map();
 
 function addCmd(cmd: Command) {
 	const idx = Commands.length
@@ -132,11 +132,11 @@ addCmd(new ShuffleMusicQueueCommand());
 addCmd(new ResponseCommand('>help', 'Помагай, шефе!', [genHelp()]));
 
 client.on('messageCreate', async (msg) => {
-	if (msg.author.id == client.user.id) return;
+	if (msg.author.id == client.user!.id) return;
 
-	log(`[${msg.guild.name}, @${msg.author.username}]: "${msg.content}"`);
+	log(`[${msg.guild!.name}, @${msg.author.username}]: "${msg.content}"`);
 
-	const member = await msg.guild.members.fetch({ user: msg.author });
+	const member = await msg.guild!.members.fetch({ user: msg.author });
 
 	let msgCtx: MessageContext = {
 		content: msg.content,
@@ -145,7 +145,7 @@ client.on('messageCreate', async (msg) => {
 
 		senderId: msg.author.id,
 		senderUsername: msg.author.username,
-		senderNickname: member.nickname,
+		senderNickname: member.nickname!,
 		senderIsBot: msg.author.bot,
 
 		senderVoiceChannelId: member.voice.channelId,
@@ -153,24 +153,23 @@ client.on('messageCreate', async (msg) => {
 		channelId: msg.channelId,
 		channelName: (msg.channel as TextChannel).name,
 
-		guildId: msg.guildId,
-		guildName: msg.guild.name,
+		guildId: msg.guildId!,
+		guildName: msg.guild!.name,
 	};
 
-	const cmdParts = msg.content.trimLeft().split(' ');
+	const cmdParts = msg.content.trimStart().split(' ');
 
 	const cmd = cmdParts[0];
 	const args = cmdParts.slice(1).join(' ');
 
 	if (CommandLookup.has(cmd)) {
-		const idx = CommandLookup.get(cmd)
+		const idx: number = CommandLookup.get(cmd)!
 		let res = await Commands[idx].execute(msgCtx, args);
 
-		if (res.error != null) {
+		if (res.error != null)
 			await msg.channel.send(`ГРЕШКА: ${res.error}`);
-		} else if (res.response != null) {
+		else if (res.response != null)
 			await msg.channel.send(res.response);
-		}
 
 		return;
 	}
@@ -179,13 +178,13 @@ client.on('messageCreate', async (msg) => {
 		process.exit(-1)
 
 	if (msg.content.startsWith('>nick ')) {
-		let self = await msg.guild.members.fetch(client.user.id);
-		const name = msg.content.substr('>nick'.length)
+		let self = await msg.guild!.members.fetch(client.user!.id);
+		const name = msg.content.substring('>nick'.length)
 
 		if(name.trim().length == 0)
 			self.setNickname("");
 		else
-			self.setNickname(msg.content.substr('>nick '.length));
+			self.setNickname(msg.content.substring('>nick '.length));
 
 		return;
 	}

@@ -3,6 +3,7 @@
 		"outDir": "./dist",
 		"allowJs": true,
 		"target": "ES6",
+		"strict": true,
 		"sourceMap": true,
 		"esModuleInterop": true,
 		"moduleResolution": "node"

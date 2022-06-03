@@ -46,8 +46,7 @@ export class ResponseCommand implements Command {
 	private _name: string;
 	private _description: string;
 	private _responses: string[];
-
-	private _aliases?: string[];
+	private _aliases: string[];
 
 	constructor(
 		name: string,
@@ -58,7 +57,7 @@ export class ResponseCommand implements Command {
 		this._name = name;
 		this._description = description;
 		this._responses = responses;
-		this._aliases = aliases;
+		this._aliases = aliases ?? [];
 	}
 
 	public name = () => this._name;
@@ -144,11 +143,10 @@ async function doJoinVC(msg: MessageContext): Promise<JoinVoiceResult> {
 		return JoinVoiceResult.Error_SenderNotInVC;
 
 	if (globalVoiceState.has(msg.guildId)) {
-		if (globalVoiceState.get(msg.guildId).voiceConnection.joinConfig.channelId != msg.senderVoiceChannelId) {
+		if (globalVoiceState.get(msg.guildId)!.voiceConnection.joinConfig.channelId != msg.senderVoiceChannelId)
 			return JoinVoiceResult.Error_AlreadyInVC;
-		} else {
+		else
 			return JoinVoiceResult.OK;
-		}
 	}
 
 	let voiceConnection = joinVoiceChannel({
@@ -219,7 +217,7 @@ export class LeaveVoiceChannelCommand implements Command {
 			};
 		}
 
-		globalVoiceState.get(msg.guildId).voiceConnection.destroy();
+		globalVoiceState.get(msg.guildId)!.voiceConnection.destroy();
 		globalVoiceState.delete(msg.guildId);
 
 		return { response: "Аре до после.", error: null }
@@ -229,12 +227,15 @@ export class LeaveVoiceChannelCommand implements Command {
 export class PlayMusicCommand implements Command {
 	public name = () => '>play';
 	public description = () => 'Пусни музика';
-	public aliases?= () => ['>pusni', '>p'];
+	public aliases? = () => ['>pusni', '>p'];
 
 	public execute = async (
 		msg: MessageContext,
-		args: string,
+		args?: string,
 	): Promise<CommandResult> => {
+		if(!args)
+			return {response: null, error: "You must tell me what to play!"};
+
 		switch (await doJoinVC(msg)) {
 			case JoinVoiceResult.Error_SenderNotInVC:
 				return {
@@ -248,7 +249,7 @@ export class PlayMusicCommand implements Command {
 				};
 		}
 
-		globalVoiceState.get(msg.guildId).player.play(args);
+		globalVoiceState.get(msg.guildId)!.player.play(args);
 
 		// TODO: Може би AudioPlayerWrapper не трябва изписва съобщение за добавена песен,
 		//       а от тук да става това.
@@ -285,14 +286,14 @@ export class ResumeMusicCommand implements Command {
 
 	public execute = async (
 		msg: MessageContext,
-		_args: string,
+		_args?: string,
 	): Promise<CommandResult> => {
 		let err = await musicCmdSanityChecks(msg);
 
 		if (err != null)
 			return { response: null, error: err }
 
-		globalVoiceState.get(msg.guildId).player.unpause()
+		globalVoiceState.get(msg.guildId)!.player.unpause()
 		return { response: null, error: null }
 	}
 }
@@ -303,14 +304,14 @@ export class PauseMusicCommand implements Command {
 
 	public execute = async (
 		msg: MessageContext,
-		_args: string,
+		_args?: string,
 	): Promise<CommandResult> => {
 		let err = await musicCmdSanityChecks(msg);
 
 		if (err != null)
 			return { response: null, error: err }
 
-		globalVoiceState.get(msg.guildId).player.pause()
+		globalVoiceState.get(msg.guildId)!.player.pause()
 		return { response: null, error: null }
 	}
 }
@@ -321,14 +322,14 @@ export class SkipSongCommand implements Command {
 
 	public execute = async (
 		msg: MessageContext,
-		_args: string,
+		_args?: string,
 	): Promise<CommandResult> => {
 		let err = await musicCmdSanityChecks(msg);
 
 		if (err != null)
 			return { response: null, error: err }
 
-		globalVoiceState.get(msg.guildId).player.skip()
+		globalVoiceState.get(msg.guildId)!.player.skip()
 		return { response: null, error: null }
 	}
 }
@@ -339,14 +340,14 @@ export class ClearMusicQueueCommand implements Command {
 
 	public execute = async (
 		msg: MessageContext,
-		_args: string,
+		_args?: string,
 	): Promise<CommandResult> => {
 		let err = await musicCmdSanityChecks(msg);
 
 		if (err != null)
 			return { response: null, error: err }
 
-		globalVoiceState.get(msg.guildId).player.clearQueue()
+		globalVoiceState.get(msg.guildId)!.player.clearQueue()
 		return { response: null, error: null }
 	}
 }
@@ -358,14 +359,14 @@ export class NowPlayingCommand implements Command {
 
 	public execute = async (
 		msg: MessageContext,
-		_args: string,
+		_args?: string,
 	): Promise<CommandResult> => {
 		let err = await musicCmdSanityChecks(msg);
 
 		if (err != null)
 			return { response: null, error: err }
 
-		globalVoiceState.get(msg.guildId).player.printCurrentSong()
+		globalVoiceState.get(msg.guildId)!.player.printCurrentSong()
 		return { response: null, error: null }
 	}
 }
@@ -377,14 +378,14 @@ export class PrintQueueCommand implements Command {
 
 	public execute = async (
 		msg: MessageContext,
-		_args: string,
+		_args?: string,
 	): Promise<CommandResult> => {
 		let err = await musicCmdSanityChecks(msg);
 
 		if (err != null)
 			return { response: null, error: err }
 
-		globalVoiceState.get(msg.guildId).player.printQueue()
+		globalVoiceState.get(msg.guildId)!.player.printQueue()
 		return { response: null, error: null }
 	}
 }
@@ -401,8 +402,11 @@ export class RemoveSongCommand implements Command {
 
 	public execute = async (
 		msg: MessageContext,
-		args: string,
+		args?: string,
 	): Promise<CommandResult> => {
+		if(args == null)
+			return {response: null, error: "No args provided!"}
+
 		let err = await musicCmdSanityChecks(msg);
 
 		if (err != null)
@@ -416,7 +420,7 @@ export class RemoveSongCommand implements Command {
 			}
 		}
 
-		const player = globalVoiceState.get(msg.guildId).player;
+		const player = globalVoiceState.get(msg.guildId)!.player;
 
 		let arg = args.split(' ')[0].trim()
 
@@ -463,14 +467,14 @@ export class ShuffleMusicQueueCommand implements Command {
 
 	public execute = async (
 		msg: MessageContext,
-		_args: string,
+		_args?: string,
 	): Promise<CommandResult> => {
 		let err = await musicCmdSanityChecks(msg);
 
 		if (err != null)
 			return { response: null, error: err }
 
-		globalVoiceState.get(msg.guildId).player.shuffle();
+		globalVoiceState.get(msg.guildId)!.player.shuffle();
 
 		return { response: 'Хубу, ей ви разна риба.', error: null }
 	}

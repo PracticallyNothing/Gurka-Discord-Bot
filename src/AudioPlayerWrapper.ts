@@ -33,12 +33,12 @@ class AudioPlayerWrapper {
 
 	public queue: Song[] = [];
 	public musicChannel: BaseGuildTextChannel;
-	public currentSong: Song = null;
+	public currentSong: Song|null = null;
 
 	private mode: PlayerMode = PlayerMode.PlayOnce;
 	private guildName: string;
 
-	private ytdl_process: ChildProcessWithoutNullStreams = null;
+	private ytdl_process: ChildProcessWithoutNullStreams|null = null;
 
 	/**
 	 * @param player Player to use to play music.
@@ -276,11 +276,17 @@ class AudioPlayerWrapper {
 
 			this.musicChannel.send(`Сега слушаме **${title}** (${elapsed}/${duration}), обаче след туй: нищо.`);
 		} else {
-			const str = [];
+			const str: string[] = [];
 
-			let title = this.currentSong.title;
-			let elapsed = this.currentSong.calcTimeElapsedString(),
+			let title: string = "hehehe poopenfarten hehehe";
+			let elapsed: string = "N";
+			let duration: string = "A";
+
+			if(this.currentSong != null) {
+				title = this.currentSong.title;
+				elapsed = this.currentSong.calcTimeElapsedString();
 				duration = this.currentSong.durationString();
+			}
 
 			this.queue.forEach((song, i) => {
 				let title = song.title,
@@ -308,7 +314,7 @@ class AudioPlayerWrapper {
 			return;
 		}
 
-		if (this.mode == PlayerMode.LoopQueue) {
+		if (this.mode == PlayerMode.LoopQueue && this.currentSong != null) {
 			this.currentSong.reset();
 			this.queue.push(this.currentSong);
 		}
