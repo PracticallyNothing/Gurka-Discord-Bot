@@ -158,7 +158,10 @@ async function doJoinVC(msg: MessageContext): Promise<JoinVoiceResult> {
             .voiceAdapterCreator as unknown as DiscordGatewayAdapterCreator,
     });
 
-    let player = createAudioPlayer({});
+    let player = createAudioPlayer({
+        debug: true,
+        behaviors: {noSubscriber: NoSubscriberBehavior.Play}
+    });
     voiceConnection.subscribe(player);
 
     let wrapper = new AudioPlayerWrapper(
